@@ -120,12 +120,6 @@ alias(
 )
 
 alias(
-    name = "typeurl",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:typeurl",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "error_collector",
     actual = "//intrinsic_sdk/intrinsic/util/proto:error_collector",
     tags = ["go/intrinsic-ioc-transition-tdd"],
