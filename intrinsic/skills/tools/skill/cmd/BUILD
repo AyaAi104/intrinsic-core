@@ -32,7 +32,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
     visibility = [
         "//intrinsic/skills/tools/skill/cmd:__pkg__",
-        "//intrinsic/storage/artifacts/client:__pkg__",
         "//intrinsic/tools/inctl/cmd:__pkg__",
         "//intrinsic/tools/inctl/cmd/cluster:__pkg__",
         "//intrinsic/tools/inctl/cmd/logs:__pkg__",
