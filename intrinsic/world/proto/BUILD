@@ -104,13 +104,6 @@ alias(
 )
 
 alias(
-    name = "object_world_updates_py_pb2",
-    actual = "//intrinsic_sdk/intrinsic/world/proto:object_world_updates_py_pb2",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
-)
-
-alias(
     name = "object_world_updates_go_proto",
     actual = "//intrinsic_sdk/intrinsic/world/proto:object_world_updates_go_proto",
     tags = ["go/intrinsic-ioc-transition-tdd"],

@@ -138,12 +138,6 @@ alias(
 )
 
 alias(
-    name = "sourcecodeinfoview",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:sourcecodeinfoview",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "names",
     actual = "//intrinsic_sdk/intrinsic/util/proto:names",
     tags = ["go/intrinsic-ioc-transition-tdd"],

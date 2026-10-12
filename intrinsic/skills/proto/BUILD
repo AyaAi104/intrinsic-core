@@ -45,26 +45,8 @@ alias(
 )
 
 alias(
-    name = "behavior_tree_registry_go_proto",
-    actual = "//intrinsic_sdk/intrinsic/skills/proto:behavior_tree_registry_go_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "skill_service_cc_proto",
     actual = "//intrinsic_sdk/intrinsic/skills/proto:skill_service_cc_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "skill_service_cc_grpc_proto",
-    actual = "//intrinsic_sdk/intrinsic/skills/proto:skill_service_cc_grpc_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "skill_service_go_proto",
-    actual = "//intrinsic_sdk/intrinsic/skills/proto:skill_service_go_proto",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
