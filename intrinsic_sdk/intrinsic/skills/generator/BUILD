@@ -38,7 +38,6 @@ go_library(
     importpath = "intrinsic/skills/generator/gen",
     visibility = [
         "//intrinsic/skills:__subpackages__",
-        "//intrinsic/skills/generator:__pkg__",
         "//intrinsic_sdk/intrinsic/skills:__subpackages__",
         "//intrinsic_sdk/intrinsic/tools/inbuild:__subpackages__",
     ],
