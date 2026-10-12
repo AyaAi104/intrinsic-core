@@ -133,9 +133,12 @@ cuda_library(
         ":border_extrapolation",
         ":smooth_device",
         "//intrinsic/util/status:status_macros",
+        "//intrinsic_perception/intrinsic/perception/core:dimensions",
         "//intrinsic_perception/intrinsic/perception/core:image_traits",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_utils",
+        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:str_format",
         "@cuda//:cuda_headers",
     ],
 )
