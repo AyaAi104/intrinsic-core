@@ -56,12 +56,6 @@ go_library(
 )
 
 alias(
-    name = "dynamic_message_parser",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:dynamic_message_parser",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "descriptor",
     actual = "//intrinsic_sdk/intrinsic/util/proto:descriptor",
     tags = ["go/intrinsic-ioc-transition-tdd"],
