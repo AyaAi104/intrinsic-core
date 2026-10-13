@@ -28,6 +28,7 @@ import (
 	"intrinsic/assets/bundle"
 	"intrinsic/assets/clientutils"
 	"intrinsic/assets/cmdutils"
+	"intrinsic/assets/conversion/solutionconversion"
 	"intrinsic/assets/imagetransfer"
 	"intrinsic/assets/platformlevelswitch"
 	"intrinsic/assets/referenceddata"
@@ -305,9 +306,13 @@ $ bazel run //intrinsic/config:empty_application --\
 				},
 				ConcurrencyLimiter: processingLimiter,
 			}
-			app, err := proc.Process(ctx, assets)
+			solutionDeployment, err := proc.Process(ctx, assets)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to process solution: %w", err)
+			}
+			app, err := solutionconversion.AsApplication(solutionDeployment)
+			if err != nil {
+				return fmt.Errorf("failed to convert solution deployment to application: %w", err)
 			}
 			if mode := operationmode.FromString(flagOperationMode); mode != opmodepb.OperationMode_OPERATION_MODE_UNSPECIFIED {
 				app.OperationMode = mode
