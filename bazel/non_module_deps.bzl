@@ -103,9 +103,9 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 """,
-        sha256 = "2a9792cb5f1403f524543ce94c3115e3c4a4229f0e86af55fd26c078da448164",
+        sha256 = "5716719def14a3fec3ed285e5e8c4280e6268854039b5073a96e8c0adafb1c02",
         type = "tar.gz",
-        urls = ["https://github.com/kubernetes-sigs/controller-tools/releases/download/envtest-v1.30.0/envtest-v1.30.0-linux-amd64.tar.gz"],
+        urls = ["https://github.com/kubernetes-sigs/controller-tools/releases/download/envtest-v1.35.0/envtest-v1.35.0-linux-amd64.tar.gz"],
         strip_prefix = "controller-tools/envtest",
     )
 
