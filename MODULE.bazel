@@ -850,6 +850,8 @@ use_repo(
 
 use_repo(
     non_module_deps,
+    "com_github_openxla_xla_tsl_net_cc",  
+    "com_github_openxla_xla_tsl_net_h",  
     "com_google_glog_googleinit_h",  
     "com_google_s2geometry_bit_interleave_cc",  
     "com_google_s2geometry_bit_interleave_h",  

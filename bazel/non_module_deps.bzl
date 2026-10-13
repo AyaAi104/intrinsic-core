@@ -148,6 +148,20 @@ filegroup(
         sha256 = "ee770ce4721fe37dd3ef6a80e4f646082d835bf4923d235c29484641b0129782",
     )
 
+    OPENXLA_COMMIT = "35fbc9a3be7d43ffaedecb96e3fa1b0e7cf5a077"  # 2026-10-12
+    http_file(
+        name = "com_github_openxla_xla_tsl_net_h",
+        downloaded_file_path = "net.h",
+        urls = ["https://raw.githubusercontent.com/openxla/xla/%s/third_party/tsl/tsl/platform/net.h" % OPENXLA_COMMIT],
+        sha256 = "67042c2c2d2014d1e4d446eae02a436d8993162d2c92e75fcd729784c26c1854",
+    )
+    http_file(
+        name = "com_github_openxla_xla_tsl_net_cc",
+        downloaded_file_path = "net.cc",
+        urls = ["https://raw.githubusercontent.com/openxla/xla/%s/xla/tsl/platform/default/net.cc" % OPENXLA_COMMIT],
+        sha256 = "a3c6a4f331255dedbb77e349bbdf34ac4971fa60115bb33e7d72c33ce8ef4e87",
+    )
+
     http_file(
         name = "oss_licenses",
         downloaded_file_path = "oss_licenses.json",
