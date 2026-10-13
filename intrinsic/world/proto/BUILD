@@ -40,20 +40,6 @@ alias(
     visibility = ["//intrinsic:public_api_users"],
 )
 
-alias(
-    name = "object_world_service_py_pb2",
-    actual = "//intrinsic_sdk/intrinsic/world/proto:object_world_service_py_pb2",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
-)
-
-alias(
-    name = "object_world_service_py_pb2_grpc",
-    actual = "//intrinsic_sdk/intrinsic/world/proto:object_world_service_py_pb2_grpc",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
-)
-
 go_proto_library(
     name = "object_world_service_go_proto",
     compilers = [
