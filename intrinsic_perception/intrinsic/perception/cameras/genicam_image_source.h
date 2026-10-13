@@ -49,8 +49,7 @@
 #include "intrinsic/perception/core/dimensions.h"
 #include "intrinsic/stats/scoped_span.h"
 
-namespace intrinsic {
-namespace perception {
+namespace intrinsic::perception {
 
 class GenicamImageSource : public ImageSource {
  public:
@@ -89,6 +88,14 @@ class GenicamImageSource : public ImageSource {
     CaptureResult capture_result;
     std::optional<absl::Duration> exposure_time;
   };
+  struct StreamingState {
+    CaptureArgs params;
+    // True once StartStream() has finished configuring the camera and while
+    // streaming acquisition is active; false while StartStream() is setting up
+    // or StopStream() is tearing down the stream.
+    bool is_active = false;
+  };
+
   absl::StatusOr<CaptureResult> GetLdrCaptureResult(
       absl::Duration timeout, bool requires_exact_exposure_time);
   absl::StatusOr<std::vector<CaptureResult>> GetLdrCaptureResults(
@@ -137,6 +144,10 @@ class GenicamImageSource : public ImageSource {
   absl::Status UpdateCameraSettingImpl(
       const CameraSetting& camera_setting) override;
 
+  // Internal helper to update a camera setting during stream startup/teardown
+  // while `streaming_state_` is populated.
+  absl::Status UpdateCameraSettingInternal(const CameraSetting& camera_setting);
+
   // Sets a value of the specified camera setting.
   // The name in the camera setting specifies the exact feature which is updated
   // and it must refer to a feature listed in the Standard Feature Naming
@@ -178,6 +189,7 @@ class GenicamImageSource : public ImageSource {
   BufferHelper buffer_helper_;
 
   mutable absl::Mutex mutex_;
+  mutable absl::Mutex camera_mutex_ ABSL_ACQUIRED_AFTER(mutex_);
 
   std::string device_id_;
 
@@ -188,11 +200,7 @@ class GenicamImageSource : public ImageSource {
   // 'TriggerMode = Off'.
   bool use_software_trigger_ = true;
 
-  // Used internally to prevent deadlocks when starting a stream but still have
-  // all of the relevant settings update.
-  bool is_stream_starting_ ABSL_GUARDED_BY(mutex_) = false;
-
-  std::optional<CaptureArgs> streaming_params_ ABSL_GUARDED_BY(mutex_);
+  std::optional<StreamingState> streaming_state_ ABSL_GUARDED_BY(mutex_);
 
   // Stores the id of the lost control callback handler.
   uint32_t lost_control_handler_id_ = 0;
@@ -263,7 +271,6 @@ class GenicamImageSource : public ImageSource {
       acquisition_measurements_per_exposure_time_;
 };
 
-}  // namespace perception
-}  // namespace intrinsic
+}  // namespace intrinsic::perception
 
 #endif  // INTRINSIC_PERCEPTION_CAMERAS_GENICAM_IMAGE_SOURCE_H_

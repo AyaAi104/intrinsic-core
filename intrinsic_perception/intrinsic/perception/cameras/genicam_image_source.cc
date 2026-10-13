@@ -685,9 +685,17 @@ GenicamImageSource::GenicamImageSource(std::string_view device_id)
     : device_id_(device_id) {}
 
 GenicamImageSource::~GenicamImageSource() {
-  if (absl::Status status = GetFaultsStatus(); !status.ok()) {
+  if (stream_ != nullptr) {
+    arv_stream_set_emit_signals(stream_.get(), FALSE);
+  }
+  if (const absl::Status status = GetFaultsStatus(); !status.ok()) {
     LOG(ERROR) << status;
-  } else if (status = StopAsyncAcquisition(); !status.ok()) {
+    return;
+  }
+  if (const absl::Status status = StopStream(); !status.ok()) {
+    LOG(ERROR) << status;
+  }
+  if (const absl::Status status = StopAsyncAcquisition(); !status.ok()) {
     LOG(ERROR) << status;
   }
 }
@@ -761,7 +769,7 @@ absl::StatusOr<CaptureResult> GenicamImageSource::CaptureImpl(
     // problematic if the camera parameters are not the same. See the TDD for
     // more details: go/intrinsic-camera-streaming-design
     absl::MutexLock lock(mutex_);
-    if (streaming_params_.has_value()) {
+    if (streaming_state_.has_value()) {
       return absl::FailedPreconditionError(
           "We do not allow Capture calls while there is a stream running.");
     }
@@ -1201,6 +1209,7 @@ GenicamImageSource::ReadCameraSettingAccessImpl(absl::string_view name) const {
     return software_hdr_->ReadCameraSettingAccess(name);
   }
 
+  absl::MutexLock lock(camera_mutex_);
   if ((name == genicam::kSensorPixelWidth ||
        name == genicam::kSensorPixelHeight) &&
       SensorPixelSize(GetVendorName(camera_.get()), GetModelName(camera_.get()))
@@ -1251,6 +1260,7 @@ GenicamImageSource::ReadCameraSettingPropertiesImpl(
     return software_hdr_->ReadCameraSettingProperties(name);
   }
 
+  absl::MutexLock lock(camera_mutex_);
   GError* error = nullptr;
 
   // Different camera vendors have different ways to get the exposure time,
@@ -1405,6 +1415,7 @@ absl::StatusOr<CameraSetting> GenicamImageSource::ReadCameraSettingImpl(
     return software_hdr_->ReadCameraSetting(name);
   }
 
+  absl::MutexLock lock(camera_mutex_);
   GError* error = nullptr;
 
   // Different camera vendors have different ways to get the exposure time,
@@ -1482,19 +1493,27 @@ absl::StatusOr<CameraSetting> GenicamImageSource::ReadCameraSettingImpl(
 
 absl::Status GenicamImageSource::UpdateCameraSettingImpl(
     const CameraSetting& camera_setting) {
-  INTR_RETURN_IF_ERROR(GetFaultsStatus());
-
   {
     // We do not allow streaming and setting updates at the same time. This can
     // be problematic if the camera parameters are not the same. See the TDD for
     // more details: go/intrinsic-camera-streaming-design
     absl::MutexLock lock(mutex_);
-    if (streaming_params_.has_value() && !is_stream_starting_) {
+    if (streaming_state_.has_value()) {
       return absl::FailedPreconditionError(
           "We do not allow updating the camera setting while there is a stream "
           "running.");
     }
   }
+
+  return UpdateCameraSettingInternal(camera_setting);
+}
+
+absl::Status GenicamImageSource::UpdateCameraSettingInternal(
+    const CameraSetting& camera_setting) {
+  if (camera_setting.name.empty()) {
+    return absl::InvalidArgumentError("Camera setting 'name' cannot be empty.");
+  }
+  INTR_RETURN_IF_ERROR(GetFaultsStatus());
 
   return RetryOnPermissionDeniedOrTimeoutOrBusy([this, &camera_setting] {
     return UpdateCameraSettingOnce(camera_setting);
@@ -1516,7 +1535,7 @@ absl::Status GenicamImageSource::UpdateCameraSettingOnce(
   }
 
   if (ParameterRequiresAcquisitionRestart(camera_setting.name)) {
-    // Stops the camera acquisition and deletes the current stream.
+    // Stops the camera acquisition while keeping the current stream allocated.
     INTR_RETURN_IF_ERROR(StopAsyncAcquisition());
   }
 
@@ -1530,12 +1549,6 @@ absl::Status GenicamImageSource::UpdateCameraSettingOnce(
 
 absl::Status GenicamImageSource::UpdateCameraSettingOnceWithPausedStream(
     const CameraSetting& camera_setting) {
-  if (camera_setting == CreateEnumCameraSetting(genicam::kTriggerMode, "On")) {
-    // Make sure that the camera is in software trigger mode. Otherwise the
-    // option "On" might not be available. See b/341888014.
-    INTR_RETURN_IF_ERROR(SetSoftwareTrigger(camera_.get()));
-  }
-
   GError* error = nullptr;
   INTR_RETURN_IF_ERROR(std::visit(
       absl::Overload{
@@ -1623,6 +1636,16 @@ absl::Status GenicamImageSource::UpdateCameraSettingOnceWithPausedStream(
               -> absl::Status {
             INTR_ASSIGN_OR_RETURN(const std::string enum_value,
                                   GetEnumerationValue(camera_setting));
+            if (camera_setting.name == genicam::kTriggerMode) {
+              if (enum_value == "On") {
+                // Make sure that the camera is in software trigger mode.
+                // Otherwise the option "On" might not be available. See
+                // b/341888014.
+                return SetSoftwareTrigger(camera_.get());
+              } else if (enum_value == "Off") {
+                return SetFreeRunningTrigger(camera_.get());
+              }
+            }
             // In Aravis, enumerations are also set through
             // arv_camera_set_string()
             arv_camera_set_string(camera_.get(), camera_setting.name.c_str(),
@@ -1732,10 +1755,11 @@ void GenicamImageSource::OnNewBuffer(ArvStream* arv_stream, void* data) {
     // Since we do not allow capture calls and streaming calls to be
     // interleaved, we can avoid an extra copy and consume the buffer directly.
     // See go/intrinsic-camera-streaming-design for more details.
-    camera->new_buffer_handled_ = !camera->streaming_params_.has_value();
+    camera->new_buffer_handled_ = !camera->streaming_state_.has_value() ||
+                                  !camera->streaming_state_->is_active;
 
     VLOG(1) << "Buffer conversion took: " << absl::Now() - onb_start;
-    if (ABSL_VLOG_IS_ON(1) && camera->streaming_params_.has_value() &&
+    if (ABSL_VLOG_IS_ON(1) && camera->streaming_state_.has_value() &&
         !status.ok()) {
       LOG(ERROR) << "Error while streaming: " << status;
     }
@@ -1754,19 +1778,22 @@ void GenicamImageSource::OnNewBuffer(ArvStream* arv_stream, void* data) {
     const int64_t frame_id = arv_buffer_get_frame_id(buffer);
     VLOG(1) << "New frame received: " << frame_id << ", TID: " << GetTID();
 
-    // Within this callback it is important to only use aravis functions which
-    // are thread-safe, see also
+    // Within this callback it is important to avoid concurrent unlocked access
+    // to `ArvCamera` across threads, see also
     // https://aravisproject.github.io/aravis/aravis-stable/thread-safety.html.
-    // This is why we need to pass fallback parameters instead of e.g. an aravis
-    // camera, as the camera must not be accessed during the callback from the
-    // aravis capturing thread.
+    // Frame decoding uses cached fallback parameters rather than querying
+    // `camera_`, and any `camera_` access during streaming is serialized under
+    // `camera_mutex_`.
     camera->mutex_.lock();
     const absl::flat_hash_map<int64_t, Dimensions> fallback_dimensions =
         camera->state_.dimensions_by_sensor_id;
     const absl::flat_hash_map<int64_t, ArvPixelFormat> fallback_pixel_format =
         camera->state_.pixel_format_by_sensor_id;
     const std::optional<CaptureArgs> streaming_params =
-        camera->streaming_params_;
+        (camera->streaming_state_.has_value() &&
+         camera->streaming_state_->is_active)
+            ? std::make_optional(camera->streaming_state_->params)
+            : std::nullopt;
     const bool should_use_stream_callbacks = streaming_params.has_value();
     camera->mutex_.unlock();
     // Create a new capture result. This will be moved from the receiving thread
@@ -1917,55 +1944,90 @@ absl::Status GenicamImageSource::ClearFaults() {
 absl::Status GenicamImageSource::StartStream(const CaptureArgs& params) {
   {
     absl::MutexLock lock(mutex_);
-    if (streaming_params_.has_value()) {
+    if (streaming_state_.has_value()) {
       return absl::FailedPreconditionError(
           "Stream is already running. Call StopStream() first.");
     }
-    is_stream_starting_ = true;
-    streaming_params_ = params;
+    streaming_state_ = StreamingState{.params = params};
   }
+  bool stream_started = false;
+  const absl::Cleanup cleanup_on_error = [&] {
+    if (!stream_started) {
+      {
+        absl::MutexLock lock(mutex_);
+        if (!streaming_state_.has_value()) {
+          streaming_state_ = StreamingState{.params = params};
+        }
+      }
+      if (const absl::Status status = StopStream(); !status.ok()) {
+        LOG(ERROR) << "Failed to clean up after stream start failure: "
+                   << status;
+      }
+    }
+  };
 
   // Apply all camera settings once before we start the capture loop.
   for (const CameraSetting& camera_setting :
        params.camera_config.camera_settings) {
     if (std::holds_alternative<CameraSetting::Command>(camera_setting.value)) {
-      INTR_RETURN_IF_ERROR(UpdateCameraSetting(camera_setting));
+      INTR_RETURN_IF_ERROR(UpdateCameraSettingInternal(camera_setting));
     } else if (const absl::StatusOr<CameraSetting> current_setting =
                    ReadCameraSetting(camera_setting.name);
                !current_setting.ok() || *current_setting != camera_setting) {
-      INTR_RETURN_IF_ERROR(UpdateCameraSetting(camera_setting));
+      INTR_RETURN_IF_ERROR(UpdateCameraSettingInternal(camera_setting));
     }
-  }
-
-  {
-    absl::MutexLock lock(mutex_);
-    is_stream_starting_ = false;
   }
 
   INTR_RETURN_IF_ERROR(GetFaultsStatus());
   INTR_RETURN_IF_ERROR(StopAsyncAcquisition());
-  INTR_RETURN_IF_ERROR(ConfigurePtpSyncAndStreamingTrigger(camera_.get()));
+  {
+    absl::MutexLock lock(camera_mutex_);
+    INTR_RETURN_IF_ERROR(ConfigurePtpSyncAndStreamingTrigger(camera_.get()));
+  }
 
   use_software_trigger_ = false;
 
+  {
+    absl::MutexLock lock(mutex_);
+    if (!streaming_state_.has_value()) {
+      return absl::CancelledError(
+          "Stream start was interrupted by StopStream.");
+    }
+    streaming_state_->is_active = true;
+    new_buffer_handled_ = false;
+    capture_result_ = {};
+  }
   INTR_RETURN_IF_ERROR(StartAsyncAcquisition());
+  stream_started = true;
   return absl::OkStatus();
 }
 
 absl::Status GenicamImageSource::StopStream() {
   {
     absl::MutexLock lock(mutex_);
-    if (!streaming_params_.has_value()) {
+    if (!streaming_state_.has_value()) {
       return absl::OkStatus();
     }
-
-    streaming_params_ = std::nullopt;
+    streaming_state_->is_active = false;
   }
 
-  INTR_RETURN_IF_ERROR(StopAsyncAcquisition());
-  INTR_RETURN_IF_ERROR(SetSoftwareTrigger(camera_.get()));
-  use_software_trigger_ = true;
-  return absl::OkStatus();
+  absl::Status status = StopAsyncAcquisition();
+  {
+    absl::MutexLock lock(camera_mutex_);
+    if (const absl::Status trigger_status = SetSoftwareTrigger(camera_.get());
+        trigger_status.ok()) {
+      use_software_trigger_ = true;
+    } else {
+      status.Update(trigger_status);
+    }
+  }
+  {
+    absl::MutexLock lock(mutex_);
+    streaming_state_ = std::nullopt;
+    new_buffer_handled_ = false;
+    capture_result_ = {};
+  }
+  return status;
 }
 
 absl::Status GenicamImageSource::StartAsyncAcquisition() {
