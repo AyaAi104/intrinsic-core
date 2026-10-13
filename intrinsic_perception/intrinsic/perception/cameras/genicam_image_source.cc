@@ -51,6 +51,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "aravis/aravis_utils.h"
 #include "intrinsic/math/pose3.h"
 #include "intrinsic/perception/cameras/aravis/aravis_glib_utils.h"
@@ -226,9 +227,44 @@ absl::StatusOr<int> SetPacketSizeToAutoValue(ArvCamera* arv_camera) {
   return current_packet_size;
 }
 
+absl::Status SetExposureTime(
+    ArvCamera* arv_camera, absl::Duration exposure_time,
+    const std::optional<CameraSettingProperties::Float>& exposure_time_props) {
+  const double exposure_time_us = absl::ToDoubleMicroseconds(exposure_time);
+  GError* error = nullptr;
+  arv_camera_set_exposure_time(
+      arv_camera,
+      exposure_time_props.has_value()
+          ? ClampAndRoundToIncrement(exposure_time_us, *exposure_time_props)
+          : exposure_time_us,
+      &error);
+  return ValidateAndNullArvError(error);
+}
+
+absl::Status VerifyExposureTime(
+    std::optional<absl::Duration> received_exposure_time,
+    absl::Duration expected_exposure_time, int num_tries) {
+  if (received_exposure_time.has_value() &&
+      absl::AbsDuration(*received_exposure_time - expected_exposure_time) >
+          kExposureTimeTolerance) {
+    return intrinsic::FailedPreconditionErrorBuilder()
+           << "Mismatch in exposure time (received=" << *received_exposure_time
+           << ", want=" << expected_exposure_time << ").";
+  }
+  // For cameras lacking ChunkExposureTime support, discard the first frame to
+  // flush any stale buffer exposed with previous settings (2-frame fallback).
+  if (!received_exposure_time.has_value() && num_tries == 1) {
+    return intrinsic::FailedPreconditionErrorBuilder()
+           << "Missing exposure time in first attempt (want="
+           << expected_exposure_time << ").";
+  }
+  return absl::OkStatus();
+}
+
 absl::StatusOr<CaptureResult> FuseLdrCaptureResults(
     const std::vector<CaptureResult>& ldr_capture_results,
-    HdrOperator hdr_operator, absl::Duration timeout) {
+    HdrOperator hdr_operator,
+    absl::Duration timeout = absl::InfiniteDuration()) {
   if (timeout <= absl::ZeroDuration()) {
     return absl::DeadlineExceededError(
         "Failed to start HDR image fusion within timeout.");
@@ -502,7 +538,7 @@ absl::Status GenicamImageSource::ConfigureCameraDefaults(
   if (aravis_camera.exposure_time_props_.has_value() &&
       aravis_camera.exposure_time_props_->range.has_value()) {
     aravis_camera.software_hdr_ =
-        SoftwareHdr(aravis_camera.exposure_time_props_->range.value());
+        SoftwareHdr(*aravis_camera.exposure_time_props_);
   } else {
     aravis_camera.software_hdr_ = std::nullopt;
   }
@@ -780,124 +816,38 @@ absl::StatusOr<CaptureResult> GenicamImageSource::CaptureImpl(
 
   INTR_RETURN_IF_ERROR(GetFaultsStatus());
 
-  // Store any initial `Once` and `Continuous` auto settings. Depending on
-  // whether the camera is in free-running mode (not using software triggering)
-  // or not we need to adjust them accordingly.
+  // Store any initial `Once` and `Continuous` auto settings when software
+  // triggering or software HDR is active.
   std::vector<CameraSetting> auto_settings;
-  {
-    const stats::ScopedSpan span("GenicamImageSource::CaptureImpl::StoreAuto");
-    INTR_ASSIGN_OR_RETURN(
-        auto_settings, [this]() -> absl::StatusOr<std::vector<CameraSetting>> {
-          std::vector<CameraSetting> settings;
-          for (const absl::string_view auto_name : kAutoNames) {
-            const absl::StatusOr<CameraSettingAccess> access =
-                ReadCameraSettingAccess(auto_name);
-            if (!access.ok() ||
-                access->mode != CameraSettingAccess::Mode::kReadWrite)
-              continue;
-            INTR_ASSIGN_OR_RETURN(const CameraSetting setting,
-                                  ReadCameraSetting(auto_name));
-            INTR_ASSIGN_OR_RETURN(const std::string enum_value,
-                                  GetEnumerationValue(setting));
-            if (enum_value != kOff) {
-              settings.push_back(setting);
-            }
-          }
-          return settings;
-        }());
-  }
-
-  // In case we trigger each frame manually by software, we can't be sure about
-  // when the last frame was actually acquired, so any auto settings may be
-  // outdated. Therefore switch `Continuous` ones to `Once`, so we can wait
-  // until the camera driver is finished with auto processing and sets them to
-  // `Off`. This way we can ensure to return the optimum frame.
-  // Only `Continuous`, but not `Once` auto settings need to be restored, as the
-  // camera driver sets them to `Off` in the loop below, and we don't want to do
-  // `Once` a second time.
-  // For HDR we need the same behavior, as the internal change of exposure
-  // times can confuse any automatic adjustments.
-  std::vector<CameraSetting> auto_settings_to_restore;
-  std::vector<absl::string_view> remaining_auto_settings_to_wait_for;
   if (use_software_trigger_ ||
       (software_hdr_.has_value() && software_hdr_->IsEnabled())) {
-    const stats::ScopedSpan span("GenicamImageSource::CaptureImpl::SetOnce");
-    remaining_auto_settings_to_wait_for.reserve(auto_settings.size());
-    for (const CameraSetting& auto_setting : auto_settings) {
-      remaining_auto_settings_to_wait_for.push_back(auto_setting.name);
-      INTR_ASSIGN_OR_RETURN(const std::string enum_value,
-                            GetEnumerationValue(auto_setting));
-      if (enum_value == kContinuous) {
-        INTR_RETURN_IF_ERROR(UpdateCameraSetting(
-            CreateEnumCameraSetting(auto_setting.name, kOnce)));
-        auto_settings_to_restore.push_back(auto_setting);
-      }
-    }
+    const stats::ScopedSpan span("GenicamImageSource::CaptureImpl::StoreAuto");
+    INTR_ASSIGN_OR_RETURN(auto_settings, GetActiveAutoSettings());
   }
 
   CaptureResult capture_result;
   std::vector<CaptureResult> ldr_capture_results;
+  std::vector<CameraSetting> auto_settings_to_restore;
   {
     // Try to restore all modified auto settings after acquisition is done.
     const absl::Cleanup on_return = [&] {
-      for (const CameraSetting& auto_setting : auto_settings_to_restore) {
-        if (const absl::Status status = UpdateCameraSetting(auto_setting);
-            !status.ok()) {
-          LOG(ERROR) << status;
-        }
+      if (const absl::Status status =
+              RestoreAutoSettings(auto_settings_to_restore);
+          !status.ok()) {
+        LOG(ERROR) << status;
       }
     };
 
-    // In case we are in software triggering mode, now wait until all auto
-    // settings are `Off`. Local experiments in the lab showed that for software
-    // triggering convergence is usually reached after about 3 to 6 calculation
-    // cycles with a Basler acA1920-50gc camera, depending on whether initial
-    // settings were close or far from ideal ones. According to
-    // https://docs.baslerweb.com/exposure-auto#enabling-or-disabling-exposure-auto
-    // the maximum number of calculation cycles is 30. Other cameras of course
-    // may differ. In any case, the loop will error out after the specified
-    // timeout is reached.
-    // In case we are in free-running mode, the loop will exit after one
-    // iteration.
-    int num_frames = 0;
     acquisition_measurements_per_exposure_time_.clear();
-    do {
+    if (!auto_settings.empty()) {
       INTR_ASSIGN_OR_RETURN(
           capture_result,
-          GetLdrCaptureResult(ToTimeout(deadline),
-                              /*requires_exact_exposure_time=*/false),
-          _ << (remaining_auto_settings_to_wait_for.empty()
-                    ? ""
-                    : absl::StrCat(
-                          "Failed to wait for [",
-                          absl::StrJoin(remaining_auto_settings_to_wait_for,
-                                        ","),
-                          "] computations to finish within ", timeout, ".")));
-      for (auto it = remaining_auto_settings_to_wait_for.begin();
-           it != remaining_auto_settings_to_wait_for.end();) {
-        INTR_ASSIGN_OR_RETURN(const CameraSetting setting,
-                              ReadCameraSetting(*it));
-        INTR_ASSIGN_OR_RETURN(const std::string enum_value,
-                              GetEnumerationValue(setting));
-        if (enum_value == kOff)
-          it = remaining_auto_settings_to_wait_for.erase(it);
-        else
-          ++it;
-      }
-      if (++num_frames >= kMaxNumFramesToConverge &&
-          !remaining_auto_settings_to_wait_for.empty()) {
-        LOG(WARNING) << "Reached the maximum number of "
-                     << kMaxNumFramesToConverge
-                     << " frames to converge, switching off any remaining auto "
-                        "settings.";
-        for (absl::string_view name : remaining_auto_settings_to_wait_for) {
-          INTR_RETURN_IF_ERROR(
-              UpdateCameraSetting(CreateEnumCameraSetting(name, kOff)));
-        }
-        // This will break the loop below.
-        remaining_auto_settings_to_wait_for.clear();
-      }
-    } while (!remaining_auto_settings_to_wait_for.empty());
+          ConvergeAutoSettings(auto_settings, ToTimeout(deadline),
+                               auto_settings_to_restore));
+    } else {
+      INTR_ASSIGN_OR_RETURN(capture_result,
+                            GetLdrCaptureResult(ToTimeout(deadline)));
+    }
 
     if (software_hdr_.has_value() && software_hdr_->IsEnabled()) {
       INTR_ASSIGN_OR_RETURN(ldr_capture_results,
@@ -953,58 +903,207 @@ absl::StatusOr<CaptureResult> GenicamImageSource::CaptureImpl(
   return capture_result;
 }
 
+absl::StatusOr<std::vector<CameraSetting>>
+GenicamImageSource::GetActiveAutoSettings() const {
+  std::vector<CameraSetting> settings;
+  for (const absl::string_view auto_name : kAutoNames) {
+    const absl::StatusOr<CameraSettingAccess> access =
+        ReadCameraSettingAccess(auto_name);
+    if (!access.ok() || access->mode != CameraSettingAccess::Mode::kReadWrite) {
+      continue;
+    }
+    INTR_ASSIGN_OR_RETURN(const CameraSetting setting,
+                          ReadCameraSetting(auto_name));
+    INTR_ASSIGN_OR_RETURN(const std::string enum_value,
+                          GetEnumerationValue(setting));
+    if (enum_value != kOff) {
+      settings.push_back(setting);
+    }
+  }
+  return settings;
+}
+
+absl::StatusOr<CaptureResult> GenicamImageSource::ConvergeAutoSettings(
+    absl::Span<const CameraSetting> active_auto_settings,
+    absl::Duration timeout,
+    std::vector<CameraSetting>& auto_settings_to_restore) {
+  INTR_RET_CHECK(!active_auto_settings.empty());
+  const absl::Time deadline = ToDeadline(timeout);
+
+  // In case we trigger each frame manually by software, we can't be sure about
+  // when the last frame was actually acquired, so any auto settings may be
+  // outdated. Therefore switch `Continuous` ones to `Once`, so we can wait
+  // until the camera driver is finished with auto processing and sets them to
+  // `Off`. This way we can ensure to return the optimum frame.
+  // Only `Continuous`, but not `Once` auto settings need to be restored, as the
+  // camera driver sets them to `Off` in the loop below, and we don't want to do
+  // `Once` a second time.
+  // For HDR (both single-frame capture and streaming) we need the same
+  // behavior, as the internal change of exposure times would otherwise conflict
+  // with automatic adjustments.
+  std::vector<absl::string_view> remaining_auto_settings_to_wait_for;
+  {
+    const stats::ScopedSpan span(
+        "GenicamImageSource::ConvergeAutoSettings::SetOnce");
+    remaining_auto_settings_to_wait_for.reserve(active_auto_settings.size());
+    for (const CameraSetting& auto_setting : active_auto_settings) {
+      remaining_auto_settings_to_wait_for.push_back(auto_setting.name);
+      INTR_ASSIGN_OR_RETURN(const std::string enum_value,
+                            GetEnumerationValue(auto_setting));
+      if (enum_value == kContinuous) {
+        INTR_RETURN_IF_ERROR(UpdateCameraSettingInternal(
+            CreateEnumCameraSetting(auto_setting.name, kOnce)));
+        auto_settings_to_restore.push_back(auto_setting);
+      }
+    }
+  }
+
+  // Wait until all active auto settings converge to `Off`. Local experiments
+  // in the lab showed that for software triggering convergence is usually
+  // reached after about 3 to 6 calculation cycles with a Basler acA1920-50gc
+  // camera, depending on whether initial settings were close or far from
+  // ideal ones. According to
+  // https://docs.baslerweb.com/exposure-auto#enabling-or-disabling-exposure-auto
+  // the maximum number of calculation cycles is 30. Other cameras of course
+  // may differ. In any case, the loop will error out after the specified
+  // timeout is reached.
+  CaptureResult capture_result;
+  int num_frames = 0;
+  do {
+    INTR_ASSIGN_OR_RETURN(
+        capture_result, GetLdrCaptureResult(ToTimeout(deadline)),
+        _ << "Failed to wait for ["
+          << absl::StrJoin(remaining_auto_settings_to_wait_for, ",")
+          << "] computations to finish within " << timeout << ".");
+    for (auto it = remaining_auto_settings_to_wait_for.begin();
+         it != remaining_auto_settings_to_wait_for.end();) {
+      INTR_ASSIGN_OR_RETURN(const CameraSetting setting,
+                            ReadCameraSetting(*it));
+      INTR_ASSIGN_OR_RETURN(const std::string enum_value,
+                            GetEnumerationValue(setting));
+      if (enum_value == kOff) {
+        it = remaining_auto_settings_to_wait_for.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    if (++num_frames >= kMaxNumFramesToConverge &&
+        !remaining_auto_settings_to_wait_for.empty()) {
+      LOG(WARNING) << "Reached the maximum number of "
+                   << kMaxNumFramesToConverge
+                   << " frames to converge, switching off any remaining auto "
+                      "settings.";
+      for (absl::string_view name : remaining_auto_settings_to_wait_for) {
+        INTR_RETURN_IF_ERROR(
+            UpdateCameraSettingInternal(CreateEnumCameraSetting(name, kOff)));
+      }
+      remaining_auto_settings_to_wait_for.clear();
+    }
+  } while (!remaining_auto_settings_to_wait_for.empty());
+
+  return capture_result;
+}
+
+absl::Status GenicamImageSource::RestoreAutoSettings(
+    absl::Span<const CameraSetting> auto_settings_to_restore) {
+  absl::Status status = absl::OkStatus();
+  for (const CameraSetting& auto_setting : auto_settings_to_restore) {
+    status.Update(UpdateCameraSettingInternal(auto_setting));
+  }
+  return status;
+}
+
+absl::StatusOr<std::vector<absl::Duration>>
+GenicamImageSource::GetHdrExposureTimes() const {
+  if (!software_hdr_.has_value() || !software_hdr_->IsEnabled()) {
+    return std::vector<absl::Duration>{};
+  }
+  INTR_ASSIGN_OR_RETURN(const CameraSetting init_exposure_time,
+                        ReadCameraSetting(genicam::kExposureTime));
+  INTR_ASSIGN_OR_RETURN(const double init_exposure_time_us,
+                        GetValue<double>(init_exposure_time));
+  return software_hdr_->HdrExposureTimes(
+      absl::Microseconds(init_exposure_time_us));
+}
+
 absl::StatusOr<std::vector<CaptureResult>>
 GenicamImageSource::GetLdrCaptureResults(absl::Duration timeout) {
   const stats::ScopedSpan span("GenicamImageSource::GetLdrCaptureResults");
   const absl::Time deadline = ToDeadline(timeout);
 
-  // Get the current exposure time.
-  INTR_ASSIGN_OR_RETURN(const CameraSetting init_exposure_time,
-                        ReadCameraSetting(genicam::kExposureTime));
-
-  CHECK(software_hdr_.has_value());
-  INTR_ASSIGN_OR_RETURN(
-      const std::vector<CameraSetting> ldr_exposure_times,
-      software_hdr_->HdrExposureTimeSettings(init_exposure_time));
-  if (ldr_exposure_times.empty()) {
+  INTR_ASSIGN_OR_RETURN(const std::vector<absl::Duration> exposure_times,
+                        GetHdrExposureTimes());
+  if (exposure_times.size() <= 1) {
     return std::vector<CaptureResult>{};
   }
 
-  std::vector<CaptureResult> ldr_capture_results;
-  ldr_capture_results.reserve(ldr_exposure_times.size());
+  // In software-triggered mode, some rolling-shutter cameras (e.g., Allied
+  // Vision Alvium) ignore a `TriggerSoftware` command sent immediately after
+  // reconfiguring `ExposureTime`. This happens in two cases:
+  // 1. When decreasing `ExposureTime`, the sensor's rolling-shutter reset timer
+  //    remains active for up to `prev_exposure - next_exposure` after readout.
+  // 2. After a very short exposure, frame transfer to the host can complete
+  //    slightly before the sensor's vertical blanking interval (and minimum
+  //    frame period `1 / AcquisitionFrameRateMax`) has elapsed.
+  //
+  // Calling `StopAsyncAcquisition` (`AcquisitionStop`, without deallocating
+  // stream buffers) before `SetExposureTime` synchronously resets the camera's
+  // acquisition state machine (`GetCaptureResultAsync` restarts acquisition
+  // before triggering), while avoiding acquisition restarts in free-running
+  // mode.
+  absl::Duration current_exposure_time = exposure_times.front();
+  const auto update_exposure_time =
+      [this, &current_exposure_time](
+          absl::Duration next_exposure_time) -> absl::Status {
+    if (next_exposure_time == current_exposure_time) {
+      return absl::OkStatus();
+    }
+    if (use_software_trigger_) {
+      INTR_RETURN_IF_ERROR(StopAsyncAcquisition());
+    }
+    INTR_RETURN_IF_ERROR(SetExposureTime(camera_.get(), next_exposure_time,
+                                         exposure_time_props_));
+    current_exposure_time = next_exposure_time;
+    return absl::OkStatus();
+  };
 
   // In case anything goes wrong during HDR acquisition, try to restore the
   // original exposure time setting on exit.
-  const absl::Cleanup on_return = [&] {
-    if (const absl::Status status = UpdateCameraSetting(init_exposure_time);
+  const absl::Cleanup restore_exposure_on_return = [&] {
+    if (const absl::Status status =
+            update_exposure_time(exposure_times.front());
         !status.ok()) {
       LOG(ERROR) << status;
     }
   };
 
-  for (const CameraSetting& ldr_exposure_time : ldr_exposure_times) {
-    INTR_RETURN_IF_ERROR(UpdateCameraSetting(ldr_exposure_time));
-
-    // Capture LDR sensor images.
+  std::vector<CaptureResult> ldr_capture_results;
+  ldr_capture_results.reserve(exposure_times.size() - 1);
+  for (const absl::Duration exposure_time :
+       absl::MakeSpan(exposure_times).subspan(1)) {
+    INTR_RETURN_IF_ERROR(update_exposure_time(exposure_time));
     INTR_ASSIGN_OR_RETURN(
         CaptureResult ldr_capture_result,
-        GetLdrCaptureResult(
-            ToTimeout(deadline),
-            /*requires_exact_exposure_time=*/!use_software_trigger_));
+        GetLdrCaptureResult(ToTimeout(deadline), exposure_time));
     ldr_capture_results.push_back(std::move(ldr_capture_result));
   }
   return ldr_capture_results;
 }
 
 absl::StatusOr<CaptureResult> GenicamImageSource::GetLdrCaptureResult(
-    absl::Duration timeout, bool requires_exact_exposure_time) {
+    absl::Duration timeout,
+    std::optional<absl::Duration> expected_exposure_time) {
   const stats::ScopedSpan span("GenicamImageSource::GetLdrCaptureResult");
-  // Get the current exposure time.
-  INTR_ASSIGN_OR_RETURN(const CameraSetting exposure_time_setting,
-                        ReadCameraSetting(genicam::kExposureTime));
-  INTR_ASSIGN_OR_RETURN(const double exposure_time_us,
-                        GetValue<double>(exposure_time_setting));
-  const absl::Duration exposure_time = absl::Microseconds(exposure_time_us);
+  absl::Duration exposure_time;
+  if (expected_exposure_time.has_value()) {
+    exposure_time = *expected_exposure_time;
+  } else {
+    INTR_ASSIGN_OR_RETURN(const CameraSetting exposure_time_setting,
+                          ReadCameraSetting(genicam::kExposureTime));
+    INTR_ASSIGN_OR_RETURN(const double exposure_time_us,
+                          GetValue<double>(exposure_time_setting));
+    exposure_time = absl::Microseconds(exposure_time_us);
+  }
   const absl::Duration minimal_timeout =
       MimimalAcquisitionTimeout(exposure_time);
   if (timeout < minimal_timeout) {
@@ -1019,6 +1118,8 @@ absl::StatusOr<CaptureResult> GenicamImageSource::GetLdrCaptureResult(
            "exposure time.";
   }
 
+  const bool requires_exact_exposure_time =
+      expected_exposure_time.has_value() && !use_software_trigger_;
   int num_tries = 0;
   absl::StatusOr<CaptureResultWithExposureTime> status_or_capture_result;
   const absl::Time start_time = absl::Now();
@@ -1028,23 +1129,12 @@ absl::StatusOr<CaptureResult> GenicamImageSource::GetLdrCaptureResult(
     status_or_capture_result = GetCaptureResultAsync(deadline);
     if (!status_or_capture_result.ok()) continue;
     if (requires_exact_exposure_time) {
-      std::string error_message;
-      if (status_or_capture_result->exposure_time.has_value() &&
-          absl::AbsDuration(*status_or_capture_result->exposure_time -
-                            exposure_time) > kExposureTimeTolerance) {
-        error_message = absl::StrCat("Mismatch in exposure time (received=",
-                                     *status_or_capture_result->exposure_time,
-                                     ", want=", exposure_time, ").");
-      } else if (!status_or_capture_result->exposure_time.has_value() &&
-                 num_tries == 1) {
-        error_message = absl::StrCat(
-            "Missing exposure time in first attempt (want=", exposure_time,
-            ").");
-      }
-      if (!error_message.empty()) {
-        status_or_capture_result = intrinsic::FailedPreconditionErrorBuilder()
-                                   << error_message;
-        LOG(INFO) << "Retrying to acquire frame. " << error_message;
+      if (absl::Status verify_status =
+              VerifyExposureTime(status_or_capture_result->exposure_time,
+                                 exposure_time, num_tries);
+          !verify_status.ok()) {
+        LOG(INFO) << "Retrying to acquire frame. " << verify_status.message();
+        status_or_capture_result = std::move(verify_status);
         continue;
       }
     }
@@ -1053,7 +1143,7 @@ absl::StatusOr<CaptureResult> GenicamImageSource::GetLdrCaptureResult(
     VLOG(1) << absl::StrFormat(
         "Retrieved frame from camera %s after attempt number %d.", device_id_,
         num_tries);
-    return std::move(status_or_capture_result.value().capture_result);
+    return std::move(status_or_capture_result->capture_result);
   } while (absl::Now() < deadline /* time left */);
 
   absl::Status status = status_or_capture_result.status();
@@ -1577,13 +1667,9 @@ absl::Status GenicamImageSource::UpdateCameraSettingOnceWithPausedStream(
               // time. For example, the Basler acA1920-25gc allows to set any
               // exposure time, but only the ones that are multiples of the
               // increment are actually applied.
-              arv_camera_set_exposure_time(
-                  camera_.get(),
-                  exposure_time_props_.has_value()
-                      ? ClampAndRoundToIncrement(float_value,
-                                                 *exposure_time_props_)
-                      : float_value,
-                  &error);
+              return SetExposureTime(camera_.get(),
+                                     absl::Microseconds(float_value),
+                                     exposure_time_props_);
             } else if (camera_setting.name == genicam::kGain) {
               arv_camera_set_gain(
                   camera_.get(),

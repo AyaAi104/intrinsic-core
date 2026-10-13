@@ -34,6 +34,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "intrinsic/math/pose3.h"
 #include "intrinsic/perception/cameras/aravis/aravis_glib_utils.h"
 #include "intrinsic/perception/cameras/aravis/aravis_utils.h"
@@ -96,8 +97,31 @@ class GenicamImageSource : public ImageSource {
     bool is_active = false;
   };
 
+  absl::StatusOr<std::vector<CameraSetting>> GetActiveAutoSettings() const;
+  // Switches any `Continuous` settings in `active_auto_settings` to `Once`
+  // (appending the original `Continuous` settings to `auto_settings_to_restore`
+  // so the caller can restore them later) and acquires frames until all
+  // settings in `active_auto_settings` converge to `Off` (or forces them to
+  // `Off` after `kMaxNumFramesToConverge` frames). Returns the last acquired
+  // frame. Precondition: `!active_auto_settings.empty()`.
+  absl::StatusOr<CaptureResult> ConvergeAutoSettings(
+      absl::Span<const CameraSetting> active_auto_settings,
+      absl::Duration timeout,
+      std::vector<CameraSetting>& auto_settings_to_restore);
+  absl::Status RestoreAutoSettings(
+      absl::Span<const CameraSetting> auto_settings_to_restore);
+  // Returns the base exposure time at `front()` followed by sorted unique
+  // knee-point exposure times. Returns an empty vector if software HDR is
+  // disabled or no distinct knee-point exposures exist.
+  absl::StatusOr<std::vector<absl::Duration>> GetHdrExposureTimes() const;
+  // Acquires a single LDR frame within `timeout`. When `expected_exposure_time`
+  // is provided, avoids querying `ExposureTime` from the camera and, in
+  // free-running mode, retries until the acquired frame's exposure time
+  // matches `expected_exposure_time` (via `ChunkExposureTime` or the 2-frame
+  // fallback).
   absl::StatusOr<CaptureResult> GetLdrCaptureResult(
-      absl::Duration timeout, bool requires_exact_exposure_time);
+      absl::Duration timeout,
+      std::optional<absl::Duration> expected_exposure_time = std::nullopt);
   absl::StatusOr<std::vector<CaptureResult>> GetLdrCaptureResults(
       absl::Duration timeout);
 
@@ -122,22 +146,24 @@ class GenicamImageSource : public ImageSource {
 
   // Reads the access to a camera setting.
   absl::StatusOr<CameraSettingAccess> ReadCameraSettingAccessImpl(
-      absl::string_view name) const override;
+      absl::string_view name) const override
+      ABSL_LOCKS_EXCLUDED(mutex_, camera_mutex_);
 
   // The function reads camera setting properties and returns them.
   // An error is only raised when settings for an unknown property are
   // requested. If some properties cannot be queried for a specific setting
   // these are not populated in the result.
   absl::StatusOr<CameraSettingProperties> ReadCameraSettingPropertiesImpl(
-      absl::string_view name) const override;
+      absl::string_view name) const override
+      ABSL_LOCKS_EXCLUDED(mutex_, camera_mutex_);
 
   // Reads and returns the currently configured camera settings. The provided
   // name must refer to a feature listed in the Standard Feature Naming
   // Convention (SFNC) from the GenICam standard.
   // The function raises an error when either the feature name is unknown or
   // when the current value of the feature cannot be requested.
-  absl::StatusOr<CameraSetting> ReadCameraSettingImpl(
-      absl::string_view name) const override;
+  absl::StatusOr<CameraSetting> ReadCameraSettingImpl(absl::string_view name)
+      const override ABSL_LOCKS_EXCLUDED(mutex_, camera_mutex_);
 
   // Retries to set the specified camera setting by `UpdateCameraSettingOnce`
   // until write permission is granted.
@@ -168,8 +194,8 @@ class GenicamImageSource : public ImageSource {
   // Post-condition: stream_ != nullptr.
   absl::Status StartAsyncAcquisition();
 
-  // Stops the camera acquisition and deletes the current stream.
-  // Post-condition: stream_ == nullptr.
+  // Stops the camera acquisition while keeping the current stream and its
+  // buffers allocated.
   absl::Status StopAsyncAcquisition();
 
   // Temporarily stops a stream to quickly change camera parameters.

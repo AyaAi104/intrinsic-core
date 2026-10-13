@@ -313,6 +313,7 @@ cc_library(
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
     alwayslink = 1,  # Required for go/registerer
 )
