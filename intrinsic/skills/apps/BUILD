@@ -134,6 +134,7 @@ cc_library(
         "//intrinsic_sdk/intrinsic/skills/proto:skill_service_cc_proto",
         "//intrinsic_sdk/intrinsic/util:proto_time",
         "//intrinsic_sdk/intrinsic/util/status:status_macros",
+        "//intrinsic_sdk/intrinsic/world/objects:kinematic_object",
         "//intrinsic_sdk/intrinsic/world/objects:object_entity_filter",
         "//intrinsic_sdk/intrinsic/world/objects:object_world_client",
         "//intrinsic_sdk/intrinsic/world/objects:world_object",
