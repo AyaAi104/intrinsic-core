@@ -43,6 +43,7 @@ go_library(
         "//intrinsic_sdk/intrinsic/skills/tools/skill/cmd:solutionutil",
         "//intrinsic_sdk/intrinsic/tools/inctl/cmd:root",
         "//intrinsic_sdk/intrinsic/tools/inctl/util:cobrautil",
+        "//intrinsic_sdk/intrinsic/tools/inctl/util:color",
         "//intrinsic_sdk/intrinsic/tools/inctl/util:orgutil",
         "//intrinsic_sdk/intrinsic/util/proto:fieldbehavior",
         "//intrinsic_sdk/intrinsic/util/proto:registryutil",
