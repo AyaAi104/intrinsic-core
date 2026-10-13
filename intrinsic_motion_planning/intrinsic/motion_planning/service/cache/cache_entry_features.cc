@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "intrinsic/motion_planning/service/motion_planner_cache_entry_features.h"
+#include "intrinsic/motion_planning/service/cache/cache_entry_features.h"
 
 #include <algorithm>
 #include <cmath>
@@ -37,8 +37,8 @@
 #include "intrinsic/math/proto_conversion.h"
 #include "intrinsic/motion_planning/proto/motion_planner_service_proto_utils.h"
 #include "intrinsic/motion_planning/proto/v1/motion_specification.pb.h"
-#include "intrinsic/motion_planning/service/motion_planner_cache_key_normalization.h"
-#include "intrinsic/motion_planning/service/motion_planner_cache_utils.h"
+#include "intrinsic/motion_planning/service/cache/cache_key_normalization.h"
+#include "intrinsic/motion_planning/service/cache/cache_utils.h"
 #include "intrinsic/util/eigen.h"
 #include "intrinsic/util/status/status_macros.h"
 #include "intrinsic/world/collision/util/make_collision_settings.h"

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_UTILS_H_
-#define INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_UTILS_H_
+#ifndef INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_CACHE_UTILS_H_
+#define INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_CACHE_UTILS_H_
 
 #include <vector>
 
@@ -85,4 +85,4 @@ absl::Status ExtractIdWithPoseFromMotionSegment(
 
 }  // namespace intrinsic
 
-#endif  // INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_UTILS_H_
+#endif  // INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_CACHE_UTILS_H_

@@ -23,7 +23,7 @@ import "intrinsic/motion_planning/proto/v1/motion_specification.proto";
 import "intrinsic/motion_planning/proto/v1/robot_specification.proto";
 import "intrinsic/world/proto/collision_settings.proto";
 
-option go_package = "intrinsic_motion_planning/intrinsic/motion_planning/service/motion_planner_cache_go_proto";
+option go_package = "intrinsic_motion_planning/intrinsic/motion_planning/service/cache/motion_planner_cache_go_proto";
 
 // Entry describing a pose of a frame referenced in the motion specification.
 message CacheEntryFramePose {

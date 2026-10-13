@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "intrinsic/motion_planning/service/motion_planner_cache_utils.h"
+#include "intrinsic/motion_planning/service/cache/cache_utils.h"
 
 #include <queue>
 #include <vector>

@@ -184,6 +184,7 @@ cc_library(
     visibility = [
         "//intrinsic/skills/apps/icon2:__pkg__",
         "//intrinsic_motion_planning/intrinsic/motion_planning/service:__pkg__",
+        "//intrinsic_motion_planning/intrinsic/motion_planning/service/cache:__pkg__",
         "//intrinsic_motion_planning/intrinsic/motion_planning/service/debug:__pkg__",
         "//intrinsic_motion_planning/intrinsic/motion_planning/service/nonvolatile_cache:__pkg__",
     ],

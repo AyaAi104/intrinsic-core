@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_ENTRY_FEATURES_H_
-#define INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_ENTRY_FEATURES_H_
+#ifndef INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_CACHE_ENTRY_FEATURES_H_
+#define INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_CACHE_ENTRY_FEATURES_H_
 
 #include <cstdint>
 #include <string>
@@ -266,4 +266,4 @@ absl::StatusOr<MotionPlanningCacheEntryFeatures> ExtractCacheEntryFeatures(
 
 }  // namespace intrinsic
 
-#endif  // INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_ENTRY_FEATURES_H_
+#endif  // INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_CACHE_ENTRY_FEATURES_H_

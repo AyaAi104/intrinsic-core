@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_H_
-#define INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_H_
+#ifndef INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_MOTION_PLANNER_CACHE_H_
+#define INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_MOTION_PLANNER_CACHE_H_
 
 #include <cstddef>
 #include <deque>
@@ -31,9 +31,9 @@
 #include "intrinsic/motion_planning/motion_planner/motion_planner.h"
 #include "intrinsic/motion_planning/proto/v1/motion_planner_service.pb.h"
 #include "intrinsic/motion_planning/proto/v1/robot_specification.pb.h"
-#include "intrinsic/motion_planning/service/motion_planner_cache.pb.h"
-#include "intrinsic/motion_planning/service/motion_planner_cache_entry_features.h"
-#include "intrinsic/motion_planning/service/motion_planner_cache_key_normalization.h"
+#include "intrinsic/motion_planning/service/cache/cache_entry_features.h"
+#include "intrinsic/motion_planning/service/cache/cache_key_normalization.h"
+#include "intrinsic/motion_planning/service/cache/motion_planner_cache.pb.h"
 #include "intrinsic/util/lru_cache.h"
 #include "intrinsic/world/objects/object_world.h"
 #include "intrinsic/world/proto/collision_settings.pb.h"
@@ -393,4 +393,4 @@ class PlanTrajectoryCache {
 };
 
 }  // namespace intrinsic
-#endif  // INTRINSIC_MOTION_PLANNING_SERVICE_MOTION_PLANNER_CACHE_H_
+#endif  // INTRINSIC_MOTION_PLANNING_SERVICE_CACHE_MOTION_PLANNER_CACHE_H_
