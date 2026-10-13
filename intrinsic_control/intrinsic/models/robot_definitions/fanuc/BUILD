@@ -239,7 +239,7 @@ xacro_file(
     src = "lr_mate_200id_7l/lr_mate_200id_7l.sdf.xacro",
     out = "lr_mate_200id_7l_world.sdf",
     data = [":lr_mate_200id_7l_data"],
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
 )
 
 sdf_scene_object(
