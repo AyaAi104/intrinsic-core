@@ -91,8 +91,10 @@ message OperationStateChangeEvent {
   RunMetadata.State operation_state = 1;
 }
 
-// Changes to the general Operation proto.
-// Usually is emitted when an Operation becomes 'done' or is reset.
+// Changes to the done/result fields of the google.longrunning.Operation.
+// Emitted with done=true and the result when the operation reaches a terminal
+// state (SUCCEEDED, FAILED, CANCELED), and once with done=false and no result
+// when a done operation is reset to a non-terminal state.
 message OperationResultChangeEvent {
   bool done = 3;
   oneof result {
@@ -114,7 +116,7 @@ message OperationEvent {
     CounterChangeEvent counter = 8;
     RunMetadataChangeEvent run_metadata = 9;
     OperationStateChangeEvent operation_state = 10;
-    OperationEvent operation = 11;
+    OperationResultChangeEvent operation_result = 11;
   }
 }
 

@@ -569,7 +569,7 @@
   (declare (salience ?*SALIENCE-HIGHER*))
   ?op <- (operation-envelope (name ?operation-name)
                       (state ?state)
-                      (run-metadata-proto-state ~?state)
+                      (run-metadata-proto-state ?prev-state&~?state)
                       (return-value-proto ?return-value-proto)
                       (operation-proto ?operation-proto)
   )
@@ -611,6 +611,15 @@
         (pb-clear-field ?operation-proto "error")
         (pb-set-field ?operation-proto "done" FALSE)
       )
+    )
+    ; Publish the result when the operation becomes done and once when a done
+    ; operation leaves its terminal state, e.g., on reset.
+    (bind ?terminal-states (create$ SUCCEEDED FAILED CANCELED))
+    (if (or (member$ ?state ?terminal-states)
+            (member$ ?prev-state ?terminal-states))
+     then
+      (operation-events-add-operation-result-change-event ?operation-name
+                                                          ?operation-proto)
     )
   )
 )

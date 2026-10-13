@@ -114,6 +114,27 @@
 
 )
 
+(deffunction operation-events-add-operation-result-change-event (?operation-name
+               ?operation-proto)
+
+  (bind ?event-proto
+    (pb-create "intrinsic_proto.executive.OperationEvent"))
+  (pb-set-field ?event-proto "operation_result.done"
+                (pb-get-field ?operation-proto "done"))
+  (if (pb-has-field ?operation-proto "error") then
+    (bind ?error-proto (pb-get-field ?operation-proto "error"))
+    (pb-set-field ?event-proto "operation_result.error" ?error-proto)
+    (pb-remove ?error-proto)
+  )
+  (if (pb-has-field ?operation-proto "response") then
+    (bind ?response-proto (pb-get-field ?operation-proto "response"))
+    (pb-set-field ?event-proto "operation_result.response" ?response-proto)
+    (pb-remove ?response-proto)
+  )
+  (operation-events-add-event ?operation-name ?event-proto)
+
+)
+
 (deffunction operation-events-add-breakpoint-change-event (?operation-name
                ?tree-id ?node-id ?breakpoint-type)
 
