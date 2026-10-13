@@ -25,8 +25,8 @@ cc_library(
         "//intrinsic_motion_planning/intrinsic/motion_planning/service/nonvolatile_cache:__pkg__",
     ],
     deps = [
-        "//intrinsic/util/status:status_conversion_grpc",
-        "//intrinsic/util/status:status_macros",
+        "//intrinsic_sdk/intrinsic/util/status:status_conversion_grpc",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "@abseil-cpp//absl/crc:crc32c",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/memory",
