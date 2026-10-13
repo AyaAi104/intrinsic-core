@@ -48,6 +48,7 @@
 #include "intrinsic/perception/cameras/software_hdr.h"
 #include "intrinsic/perception/core/camera_params.h"
 #include "intrinsic/perception/core/dimensions.h"
+#include "intrinsic/perception/core/hdr_utils.h"
 #include "intrinsic/stats/scoped_span.h"
 
 namespace intrinsic::perception {
@@ -89,12 +90,20 @@ class GenicamImageSource : public ImageSource {
     CaptureResult capture_result;
     std::optional<absl::Duration> exposure_time;
   };
+  struct StreamingHdrState {
+    std::vector<absl::Duration> exposure_times;
+    std::vector<CameraSetting> auto_settings_to_restore;
+    int num_tries = 0;
+    HdrOperator hdr_operator = HdrOperator::kMertens;
+    std::vector<CaptureResult> ldr_frames;
+  };
   struct StreamingState {
     CaptureArgs params;
     // True once StartStream() has finished configuring the camera and while
     // streaming acquisition is active; false while StartStream() is setting up
     // or StopStream() is tearing down the stream.
     bool is_active = false;
+    std::optional<StreamingHdrState> hdr;
   };
 
   absl::StatusOr<std::vector<CameraSetting>> GetActiveAutoSettings() const;
@@ -124,6 +133,19 @@ class GenicamImageSource : public ImageSource {
       std::optional<absl::Duration> expected_exposure_time = std::nullopt);
   absl::StatusOr<std::vector<CaptureResult>> GetLdrCaptureResults(
       absl::Duration timeout);
+
+  // Processes a newly captured frame during streaming, advancing the HDR
+  // exposure bracket and updating the camera's ExposureTime when streaming HDR
+  // is active. Returns `std::nullopt` if the stream has stopped, the frame's
+  // exposure time does not match the current bracket step, or the frame was
+  // buffered as an intermediate LDR bracket frame. Returns a populated
+  // `CaptureResult` containing the fused HDR image once all bracket exposures
+  // are collected, or the unmodified `capture_result` when streaming HDR is
+  // inactive.
+  absl::StatusOr<std::optional<CaptureResult>> ProcessStreamingHdrFrame(
+      CaptureResult capture_result,
+      std::optional<absl::Duration> received_exposure, int64_t frame_id)
+      ABSL_LOCKS_EXCLUDED(mutex_, camera_mutex_);
 
   // Retries the passed function until write permission is granted or the device
   // is ready again (after a timeout or being busy). Waiting for permission is
