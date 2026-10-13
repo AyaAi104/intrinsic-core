@@ -25,7 +25,7 @@ cc_library(
     visibility = ["//intrinsic:intrinsic_internal"],
     deps = [
         "//intrinsic/util:file_helpers",
-        "//intrinsic/util/status:status_macros",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",

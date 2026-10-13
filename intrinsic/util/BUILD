@@ -62,7 +62,7 @@ cc_library(
     srcs = ["file_helpers.cc"],
     hdrs = ["file_helpers.h"],
     deps = [
-        "//intrinsic/util/status:status_macros",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -169,7 +169,7 @@ cc_library(
     srcs = ["testcallback.cc"],
     hdrs = ["testcallback.h"],
     deps = [
-        "//intrinsic/util/status:status_macros",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:no_destructor",
         "@abseil-cpp//absl/container:flat_hash_map",
