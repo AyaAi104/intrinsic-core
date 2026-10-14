@@ -36,7 +36,7 @@ cc_library(
         "server_impl.h",
     ],
     deps = [
-        "//intrinsic/production/external/googleinit",
+        "//intrinsic/stats:metrics_utils",
         "//intrinsic_sdk/intrinsic/platform/pubsub",
         "//intrinsic_sdk/intrinsic/platform/pubsub:kvstore",
         "//intrinsic_sdk/intrinsic/util/status:status_conversion_grpc",
@@ -44,13 +44,13 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_protobuf//:protobuf",
         "@intrinsic_apis//intrinsic/platform/pubsub/kvstore_grpc:kvstore_cc_grpc_proto",
         "@intrinsic_apis//intrinsic/platform/pubsub/kvstore_grpc:kvstore_cc_proto",
-        "@io_opencensus_cpp//opencensus/stats",
-        "@io_opencensus_cpp//opencensus/tags",
+        "@io_opentelemetry_cpp//api",
     ],
 )
 
