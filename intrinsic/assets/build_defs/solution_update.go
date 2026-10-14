@@ -46,6 +46,7 @@ import (
 	"intrinsic/tools/inctl/util/traceutil"
 	"intrinsic/util/go/build"
 	"intrinsic/util/path_resolver/pathresolver"
+	"intrinsic/util/proto/protoio"
 
 	lropb "cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/bazelbuild/rules_go/go/runfiles"
@@ -56,7 +57,6 @@ import (
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 
 	assetpb "intrinsic/assets/build_defs/asset_go_proto"
 	assetartifactspb "intrinsic/assets/proto/v1/asset_artifacts_go_proto"
@@ -72,13 +72,9 @@ import (
 )
 
 func readLocalSolution(path string) (*assetpb.LocalSolution, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read solution assets proto %q: %w", path, err)
-	}
 	assets := new(assetpb.LocalSolution)
-	if err := proto.Unmarshal(b, assets); err != nil {
-		return nil, fmt.Errorf("failed to parse solution assets proto %q: %w", path, err)
+	if err := protoio.ReadTextProto(path, assets); err != nil {
+		return nil, fmt.Errorf("failed to read solution assets proto %q: %w", path, err)
 	}
 	return assets, nil
 }

@@ -37,6 +37,7 @@ go_binary(
         "//intrinsic/world/proto:object_world_updates_go_proto",
         "@com_github_golang_glog//:go_default_library",
         "@intrinsic_apis//intrinsic/config/proto:operation_mode_go_proto",
+        "@org_golang_google_protobuf//reflect/protoregistry:go_default_library",
     ],
 )
 
@@ -132,6 +133,7 @@ go_binary(
         "//intrinsic/tools/inctl/util:traceutil",
         "//intrinsic/util/go:build",
         "//intrinsic/util/path_resolver:pathresolver",
+        "//intrinsic/util/proto:protoio",
         "@com_github_cenkalti_backoff_v4//:go_default_library",
         "@com_github_golang_glog//:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
@@ -145,6 +147,5 @@ go_binary(
         "@io_opencensus_go//trace:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
-        "@org_golang_google_protobuf//proto",
     ],
 )
