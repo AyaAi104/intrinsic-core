@@ -39,12 +39,6 @@ alias(
 )
 
 alias(
-    name = "log_item_py_pb2",
-    actual = "//intrinsic_sdk/intrinsic/logging/proto:log_item_py_pb2",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "logger_service_cc_grpc",
     actual = "//intrinsic_sdk/intrinsic/logging/proto:logger_service_cc_grpc",
     tags = ["go/intrinsic-ioc-transition-tdd"],

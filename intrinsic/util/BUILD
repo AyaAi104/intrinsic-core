@@ -19,12 +19,6 @@ package(
 )
 
 alias(
-    name = "demangle",
-    actual = "//intrinsic_sdk/intrinsic/util:demangle",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "hash",
     actual = "//intrinsic_sdk/intrinsic/util:hash",
     tags = ["go/intrinsic-ioc-transition-tdd"],
@@ -33,12 +27,6 @@ alias(
 alias(
     name = "aggregate_type",
     actual = "//intrinsic_sdk/intrinsic/util:aggregate_type",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "atomic_sequence_num",
-    actual = "//intrinsic_sdk/intrinsic/util:atomic_sequence_num",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
@@ -78,20 +66,8 @@ alias(
 )
 
 alias(
-    name = "invalid_until_set",
-    actual = "//intrinsic_sdk/intrinsic/util:invalid_until_set",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "macros",
     actual = "//intrinsic_sdk/intrinsic/util:macros",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "page_fault_info",
-    actual = "//intrinsic_sdk/intrinsic/util:page_fault_info",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
@@ -137,12 +113,6 @@ cc_library(
 alias(
     name = "lru_cache",
     actual = "//intrinsic_sdk/intrinsic/util:lru_cache",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "memory_lock",
-    actual = "//intrinsic_sdk/intrinsic/util:memory_lock",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 

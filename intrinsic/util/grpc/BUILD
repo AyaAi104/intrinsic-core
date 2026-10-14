@@ -56,13 +56,6 @@ alias(
 )
 
 alias(
-    name = "limits",
-    actual = "//intrinsic_sdk/intrinsic/util/grpc:limits",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
-)
-
-alias(
     name = "interceptor",
     actual = "//intrinsic_sdk/intrinsic/util/grpc:interceptor",
     tags = ["go/intrinsic-ioc-transition-tdd"],
