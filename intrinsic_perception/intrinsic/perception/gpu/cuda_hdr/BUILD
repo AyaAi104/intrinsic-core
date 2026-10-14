@@ -52,6 +52,7 @@ cuda_library(
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_image_proc:border_extrapolation",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_image_proc:color_conversion_device",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_image_proc:laplacian_device",
+        "//intrinsic_perception/intrinsic/perception/gpu/cuda_image_proc:smooth_device",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_utils",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",

@@ -20,6 +20,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <type_traits>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -30,6 +31,7 @@
 #include "intrinsic/perception/gpu/cuda_image_proc/border_extrapolation_device.h"
 #include "intrinsic/perception/gpu/cuda_image_proc/color_conversion_device.h"
 #include "intrinsic/perception/gpu/cuda_image_proc/laplacian_device.h"
+#include "intrinsic/perception/gpu/cuda_image_proc/smooth_device.h"
 #include "intrinsic/perception/gpu/cuda_utils/cuda_array.h"
 #include "intrinsic/perception/gpu/cuda_utils/cuda_image.h"
 #include "intrinsic/perception/gpu/cuda_utils/cuda_math.h"
@@ -211,7 +213,7 @@ __global__ void NormalizeWeightMapsKernel(PtrArray weight_maps_dataptrs,
   }
 }
 
-template <typename ImageTraits>
+template <typename ImageTraits, bool kAccumulate>
 __global__ void BlendWeightMapAndImageKernel(
     const float* weight_map, const typename ImageTraits::ScalarType* image,
     float* accumulator, int cols, int rows) {
@@ -223,12 +225,87 @@ __global__ void BlendWeightMapAndImageKernel(
   constexpr int kNumChannels = ImageTraits::kNumChannels;
   const size_t pixel_index = y * cols + x;
   const size_t pixel_index_with_channels = pixel_index * kNumChannels;
-  weight_map += pixel_index;
+  const float weight = weight_map[pixel_index];
   image += pixel_index_with_channels;
   accumulator += pixel_index_with_channels;
 #pragma unroll
   for (int i = 0; i < kNumChannels; ++i) {
-    accumulator[i] += weight_map[0] * static_cast<float>(image[i]);
+    if constexpr (kAccumulate) {
+      accumulator[i] += weight * static_cast<float>(image[i]);
+    } else {
+      accumulator[i] = weight * static_cast<float>(image[i]);
+    }
+  }
+}
+
+template <typename ImageTraits, bool kAccumulate>
+__global__ void PyrUpAndBlendLaplacianKernel(
+    const float* weight_map, const typename ImageTraits::ScalarType* image_curr,
+    const typename ImageTraits::ScalarType* image_down, float* accumulator,
+    int src_cols, int dst_cols, int dst_rows, BorderType border_type) {
+  using ScalarType = typename ImageTraits::ScalarType;
+  constexpr int kNumChannels = ImageTraits::kNumChannels;
+
+  const int image_col = static_cast<int>(blockIdx.x * kGaussian5x5BlockSize) +
+                        static_cast<int>(threadIdx.x) -
+                        kGaussian5x5HalfKernelWidth;
+  const int image_row = static_cast<int>(blockIdx.y * kGaussian5x5BlockSize) +
+                        static_cast<int>(threadIdx.y) -
+                        kGaussian5x5HalfKernelWidth;
+  const int image_col_extrap =
+      GetExtrapolatedPixelIndex(image_col, dst_cols, border_type);
+  const int image_row_extrap =
+      GetExtrapolatedPixelIndex(image_row, dst_rows, border_type);
+
+  __shared__ ScalarType
+      block_src[kGaussian5x5BlockSizePadded * kGaussian5x5BlockSizePadded];
+  __shared__ float
+      block_src_temp[kGaussian5x5BlockSizePadded * kGaussian5x5BlockSizePadded];
+
+  const bool is_active_output = IsGaussian5x5InteriorThread() &&
+                                image_col >= 0 && image_col < dst_cols &&
+                                image_row >= 0 && image_row < dst_rows;
+
+  float weight = 0.0f;
+  if (is_active_output) {
+    const size_t pixel_index =
+        (static_cast<size_t>(image_row) * dst_cols) + image_col;
+    weight = weight_map[pixel_index];
+    image_curr += pixel_index * kNumChannels;
+    accumulator += pixel_index * kNumChannels;
+  }
+
+  const bool valid_even_extrap =
+      image_col_extrap >= 0 && image_row_extrap >= 0 &&
+      (image_col_extrap & 1) == 0 && (image_row_extrap & 1) == 0;
+  const size_t down_offset =
+      valid_even_extrap
+          ? ((static_cast<size_t>(image_row_extrap >> 1) * src_cols) +
+             (image_col_extrap >> 1)) *
+                kNumChannels
+          : 0;
+
+  for (int i = 0; i < kNumChannels; ++i) {
+    const ScalarType src_pix = valid_even_extrap ? image_down[down_offset + i]
+                                                 : static_cast<ScalarType>(0);
+    const ScalarType upsampled_pix = SmoothUpsampledChannelTileWithGaussian5x5(
+        src_pix, block_src, block_src_temp, is_active_output);
+    if (is_active_output) {
+      float laplacian = 0.0f;
+      if constexpr (std::is_integral_v<ScalarType>) {
+        laplacian = static_cast<float>(static_cast<int>(image_curr[i]) -
+                                       static_cast<int>(upsampled_pix));
+      } else {
+        laplacian = __fsub_rn(static_cast<float>(image_curr[i]),
+                              static_cast<float>(upsampled_pix));
+      }
+      if constexpr (kAccumulate) {
+        accumulator[i] += weight * laplacian;
+      } else {
+        accumulator[i] = weight * laplacian;
+      }
+    }
+    __syncthreads();
   }
 }
 
@@ -330,11 +407,15 @@ absl::Status NormalizeWeightMaps(
   return absl::OkStatus();
 }
 
-template <typename ImageTraits>
-absl::Status BlendWeightMapAndImage(
-    const CudaImage<Generic32f>& weight_map,
-    const CudaImage<ImageTraits>& image,
-    CudaImage<GenericTrait<float, ImageTraits::kNumChannels>>& accumulator) {
+template <typename ImageTraits, typename AccumulatorTrait>
+absl::Status BlendWeightMapAndImage(const CudaImage<Generic32f>& weight_map,
+                                    const CudaImage<ImageTraits>& image,
+                                    bool accumulate,
+                                    CudaImage<AccumulatorTrait>& accumulator) {
+  static_assert(std::is_same_v<typename AccumulatorTrait::ScalarType, float> &&
+                    AccumulatorTrait::kNumChannels == ImageTraits::kNumChannels,
+                "accumulator must have float scalar type and the same number "
+                "of channels as image.");
   if (weight_map.dimensions() != image.dimensions()) {
     return absl::InvalidArgumentError(
         "weight_map and image must have the same dimensions.");
@@ -347,29 +428,139 @@ absl::Status BlendWeightMapAndImage(
   const dim3 num_blocks(CeilSizeDiv(image.cols(), kBlockSize),
                         CeilSizeDiv(image.rows(), kBlockSize));
   const dim3 num_threads_per_block(kBlockSize, kBlockSize);
-  BlendWeightMapAndImageKernel<ImageTraits>
-      <<<num_blocks, num_threads_per_block>>>(weight_map.data(), image.data(),
-                                              accumulator.data(), image.cols(),
-                                              image.rows());
+  if (accumulate) {
+    BlendWeightMapAndImageKernel<ImageTraits, /*kAccumulate=*/true>
+        <<<num_blocks, num_threads_per_block>>>(weight_map.data(), image.data(),
+                                                accumulator.data(),
+                                                image.cols(), image.rows());
+  } else {
+    BlendWeightMapAndImageKernel<ImageTraits, /*kAccumulate=*/false>
+        <<<num_blocks, num_threads_per_block>>>(weight_map.data(), image.data(),
+                                                accumulator.data(),
+                                                image.cols(), image.rows());
+  }
   CUDA_CHECK(cudaStreamSynchronize(nullptr));
   return absl::OkStatus();
 }
 
 template absl::Status BlendWeightMapAndImage(
     const CudaImage<Generic32f>& weight_map, const CudaImage<Generic16i>& image,
-    CudaImage<Generic32f>& accumulator);
+    bool accumulate, CudaImage<Generic32f>& accumulator);
 
 template absl::Status BlendWeightMapAndImage(
     const CudaImage<Generic32f>& weight_map,
-    const CudaImage<Generic16i3>& image, CudaImage<Generic32f3>& accumulator);
+    const CudaImage<Generic16i3>& image, bool accumulate,
+    CudaImage<Generic32f3>& accumulator);
 
 template absl::Status BlendWeightMapAndImage(
     const CudaImage<Generic32f>& weight_map, const CudaImage<Generic32f>& image,
-    CudaImage<Generic32f>& accumulator);
+    bool accumulate, CudaImage<Generic32f>& accumulator);
 
 template absl::Status BlendWeightMapAndImage(
     const CudaImage<Generic32f>& weight_map,
-    const CudaImage<Generic32f3>& image, CudaImage<Generic32f3>& accumulator);
+    const CudaImage<Generic32f3>& image, bool accumulate,
+    CudaImage<Generic32f3>& accumulator);
+
+template absl::Status BlendWeightMapAndImage(
+    const CudaImage<Generic32f>& weight_map, const CudaImage<Gray8u>& image,
+    bool accumulate, CudaImage<Generic32f>& accumulator);
+
+template absl::Status BlendWeightMapAndImage(
+    const CudaImage<Generic32f>& weight_map, const CudaImage<Rgb8u>& image,
+    bool accumulate, CudaImage<Generic32f3>& accumulator);
+
+template absl::Status BlendWeightMapAndImage(
+    const CudaImage<Generic32f>& weight_map, const CudaImage<Gray32f>& image,
+    bool accumulate, CudaImage<Generic32f>& accumulator);
+
+template absl::Status BlendWeightMapAndImage(
+    const CudaImage<Generic32f>& weight_map, const CudaImage<Gray32f>& image,
+    bool accumulate, CudaImage<Gray32f>& accumulator);
+
+template absl::Status BlendWeightMapAndImage(
+    const CudaImage<Generic32f>& weight_map, const CudaImage<Rgb32f>& image,
+    bool accumulate, CudaImage<Generic32f3>& accumulator);
+
+template absl::Status BlendWeightMapAndImage(
+    const CudaImage<Generic32f>& weight_map, const CudaImage<Rgb32f>& image,
+    bool accumulate, CudaImage<Rgb32f>& accumulator);
+
+template <typename ImageTraits, typename AccumulatorTrait>
+absl::Status PyrUpAndBlendLaplacian(const CudaImage<Generic32f>& weight_map,
+                                    const CudaImage<ImageTraits>& image_curr,
+                                    const CudaImage<ImageTraits>& image_down,
+                                    BorderType border_type, bool accumulate,
+                                    CudaImage<AccumulatorTrait>& accumulator) {
+  static_assert(std::is_same_v<typename AccumulatorTrait::ScalarType, float> &&
+                    AccumulatorTrait::kNumChannels == ImageTraits::kNumChannels,
+                "accumulator must have float scalar type and the same number "
+                "of channels as image_curr.");
+  if (weight_map.dimensions() != image_curr.dimensions() ||
+      weight_map.dimensions() != accumulator.dimensions()) {
+    return absl::InvalidArgumentError(
+        "weight_map, image_curr, and accumulator must have the same "
+        "dimensions.");
+  }
+  const int dst_cols = image_curr.cols();
+  const int dst_rows = image_curr.rows();
+  if (CeilSizeDiv(dst_cols, 2) != image_down.cols() ||
+      CeilSizeDiv(dst_rows, 2) != image_down.rows()) {
+    return absl::InvalidArgumentError(
+        "image_down dimensions are incompatible with image_curr dimensions.");
+  }
+  const dim3 num_blocks(CeilSizeDiv(dst_cols, kGaussian5x5BlockSize),
+                        CeilSizeDiv(dst_rows, kGaussian5x5BlockSize));
+  const dim3 num_threads_per_block(kGaussian5x5BlockSizePadded,
+                                   kGaussian5x5BlockSizePadded);
+  if (accumulate) {
+    PyrUpAndBlendLaplacianKernel<ImageTraits, /*kAccumulate=*/true>
+        <<<num_blocks, num_threads_per_block>>>(
+            weight_map.data(), image_curr.data(), image_down.data(),
+            accumulator.data(), image_down.cols(), dst_cols, dst_rows,
+            border_type);
+  } else {
+    PyrUpAndBlendLaplacianKernel<ImageTraits, /*kAccumulate=*/false>
+        <<<num_blocks, num_threads_per_block>>>(
+            weight_map.data(), image_curr.data(), image_down.data(),
+            accumulator.data(), image_down.cols(), dst_cols, dst_rows,
+            border_type);
+  }
+  CUDA_CHECK(cudaStreamSynchronize(nullptr));
+  return absl::OkStatus();
+}
+
+template absl::Status PyrUpAndBlendLaplacian(
+    const CudaImage<Generic32f>& weight_map,
+    const CudaImage<Gray8u>& image_curr, const CudaImage<Gray8u>& image_down,
+    BorderType border_type, bool accumulate,
+    CudaImage<Generic32f>& accumulator);
+
+template absl::Status PyrUpAndBlendLaplacian(
+    const CudaImage<Generic32f>& weight_map, const CudaImage<Rgb8u>& image_curr,
+    const CudaImage<Rgb8u>& image_down, BorderType border_type, bool accumulate,
+    CudaImage<Generic32f3>& accumulator);
+
+template absl::Status PyrUpAndBlendLaplacian(
+    const CudaImage<Generic32f>& weight_map,
+    const CudaImage<Gray32f>& image_curr, const CudaImage<Gray32f>& image_down,
+    BorderType border_type, bool accumulate,
+    CudaImage<Generic32f>& accumulator);
+
+template absl::Status PyrUpAndBlendLaplacian(
+    const CudaImage<Generic32f>& weight_map,
+    const CudaImage<Gray32f>& image_curr, const CudaImage<Gray32f>& image_down,
+    BorderType border_type, bool accumulate, CudaImage<Gray32f>& accumulator);
+
+template absl::Status PyrUpAndBlendLaplacian(
+    const CudaImage<Generic32f>& weight_map,
+    const CudaImage<Rgb32f>& image_curr, const CudaImage<Rgb32f>& image_down,
+    BorderType border_type, bool accumulate,
+    CudaImage<Generic32f3>& accumulator);
+
+template absl::Status PyrUpAndBlendLaplacian(
+    const CudaImage<Generic32f>& weight_map,
+    const CudaImage<Rgb32f>& image_curr, const CudaImage<Rgb32f>& image_down,
+    BorderType border_type, bool accumulate, CudaImage<Rgb32f>& accumulator);
 
 }  // namespace perception
 }  // namespace intrinsic
