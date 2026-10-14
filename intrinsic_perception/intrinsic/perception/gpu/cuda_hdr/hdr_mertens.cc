@@ -14,6 +14,7 @@
 
 #include "intrinsic/perception/gpu/cuda_hdr/hdr_mertens.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include <utility>
@@ -36,6 +37,7 @@
 
 namespace intrinsic {
 namespace perception {
+namespace {
 
 absl::Status CheckHdrMertensParams(const HdrMertensParams& params) {
   if (params.contrast_exponent < 0.0f) {
@@ -48,8 +50,39 @@ absl::Status CheckHdrMertensParams(const HdrMertensParams& params) {
     return absl::InvalidArgumentError(
         "well_exposedness_exponent must be >= 0.0.");
   }
+  if (params.pyramid_min_dimensions.cols < 1 ||
+      params.pyramid_min_dimensions.rows < 1) {
+    return absl::InvalidArgumentError("pyramid_min_dimensions must be >= 1x1.");
+  }
   return absl::OkStatus();
 }
+
+template <typename InputTraits>
+absl::Status ValidateHdrMertensInputs(
+    const std::vector<CudaImage<InputTraits>>& ldr_images,
+    const HdrMertensParams& params) {
+  if (ldr_images.empty()) {
+    return absl::InvalidArgumentError("ldr_images must not be empty.");
+  }
+  INTR_RETURN_IF_ERROR(CheckHdrMertensParams(params));
+
+  const Dimensions base_dims = ldr_images[0].dimensions();
+  if (base_dims.cols < params.pyramid_min_dimensions.cols ||
+      base_dims.rows < params.pyramid_min_dimensions.rows) {
+    return absl::InvalidArgumentError(
+        "image dimensions must be >= pyramid_min_dimensions.");
+  }
+  for (size_t i = 1; i < ldr_images.size(); ++i) {
+    if (ldr_images[i].dimensions() != base_dims) {
+      return absl::InvalidArgumentError(
+          "Image dimensions mismatch. Ensure that all images have the same "
+          "dimensions.");
+    }
+  }
+  return absl::OkStatus();
+}
+
+}  // namespace
 
 template <typename ImageTraits>
 absl::StatusOr<Image<ImageTraits>> ComputeHdrMertens(
@@ -91,6 +124,8 @@ absl::StatusOr<Image<ImageTraits>> ComputeHdrMertens(
   return host_hdr_image;
 }
 
+namespace {
+
 template <typename ImageTraits>
 struct LaplacianPyramidImageType;
 
@@ -114,6 +149,8 @@ struct LaplacianPyramidImageType<Rgb32f> {
   typedef Generic32f3 type;
 };
 
+}  // namespace
+
 template absl::StatusOr<Image<Gray8u>> ComputeHdrMertens(
     const std::vector<const Image<Gray8u>*>& ldr_images,
     const HdrMertensParams& params, bool use_float_precision);
@@ -126,10 +163,7 @@ template <typename ImageTraits>
 absl::StatusOr<CudaImage<ImageTraits>> ComputeHdrMertens(
     const std::vector<CudaImage<ImageTraits>>& ldr_images,
     const HdrMertensParams& params) {
-  if (ldr_images.empty()) {
-    return absl::InvalidArgumentError("ldr_images must not be empty.");
-  }
-  INTR_RETURN_IF_ERROR(CheckHdrMertensParams(params));
+  INTR_RETURN_IF_ERROR(ValidateHdrMertensInputs(ldr_images, params));
   std::vector<CudaImage<Generic32f>> weight_maps;
   weight_maps.reserve(ldr_images.size());
   for (const auto& image : ldr_images) {
