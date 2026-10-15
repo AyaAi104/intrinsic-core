@@ -711,10 +711,10 @@ oci.pull(
 )
 oci.pull(
     name = "nginx_base",
-    digest = "sha256:60f0d4e986561e08804f75c211dcaf7fc5455699eada29f42cbe8a0a7253dd86",
+    digest = "sha256:6c3fee1d7a4686ea271e9cc60d9c741cdfbc44ecf11d343025e1cff4c5522f47",
     image = "us-central1-docker.pkg.dev/intrinsic-mirror/intrinsic-mirror-dockerhub/library/nginx",
     platforms = ["linux/amd64"],
-    tag = "1.31.6",  # tag needs to be specified for renovatebot to sync the digest
+    tag = "1.31.7",  # tag needs to be specified for renovatebot to sync the digest
 )
 oci.pull(
     name = "distroless_static",
