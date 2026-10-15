@@ -92,6 +92,7 @@ cc_library(
         "//intrinsic/longrunning/cc:operations_proxy",
         "//intrinsic/scene/instantiation:imported_scene_instantiator_h",
         "//intrinsic/scene/mesh:scene_object_from_mesh_file",
+        "//intrinsic/scene/mesh:scene_object_to_glb",
         "//intrinsic/scene/processing:scale_imported_scene",
         "//intrinsic/scene/processing:transform_imported_scene",
         "//intrinsic/scene/proto/v1:imported_scene_updates_cc_proto",

@@ -65,6 +65,7 @@
 #include "intrinsic/math/proto_conversion.h"
 #include "intrinsic/scene/instantiation/imported_scene_instantiator.h"
 #include "intrinsic/scene/mesh/scene_object_from_mesh_file.h"
+#include "intrinsic/scene/mesh/scene_object_to_glb.h"
 #include "intrinsic/scene/proto/v1/export.pb.h"
 #include "intrinsic/scene/proto/v1/imported_scene.pb.h"
 #include "intrinsic/scene/proto/v1/scene_object.pb.h"
@@ -110,7 +111,9 @@ using internal::SceneFileTypes;
 
 namespace {
 
+using ::intrinsic::scene_object::SceneObjectToGlb;
 using ::intrinsic::scene_object::SceneObjectToZippedSdf;
+using ::intrinsic::scene_object::ValidateSceneObject;
 using ::intrinsic::sdf::SceneObjectToSdf;
 using ::intrinsic::sdf::SceneObjectToSdfOptions;
 using ::intrinsic_proto::geometry::GeometryService;
@@ -385,12 +388,27 @@ SceneObjectImportImpl::InstantiateImportedScene(
 
 absl::StatusOr<ExportResponse> SceneObjectImportImpl::Export(
     grpc::ServerContext* absl_nonnull context, const ExportRequest* request) {
-  if (request->format() != ExportRequest::EXPORT_FORMAT_SDF) {
-    return absl::UnimplementedError("Only SDF format is currently supported.");
+  if (request->format() != ExportRequest::EXPORT_FORMAT_SDF &&
+      request->format() != ExportRequest::EXPORT_FORMAT_GLB) {
+    return absl::UnimplementedError(
+        "Only SDF and GLB formats are currently supported.");
   }
 
   if (!request->has_scene_object()) {
     return absl::InvalidArgumentError("Request does not contain SceneObject.");
+  }
+
+  const SceneObject& scene_object = request->scene_object().proto();
+  INTR_RETURN_IF_ERROR(ValidateSceneObject(scene_object));
+
+  if (request->format() == ExportRequest::EXPORT_FORMAT_GLB) {
+    if (geometry_library_ == nullptr) {
+      return absl::InternalError("Geometry library is not initialized.");
+    }
+    ExportResponse response;
+    INTR_ASSIGN_OR_RETURN(*response.mutable_glb(),
+                          SceneObjectToGlb(scene_object, *geometry_library_));
+    return response;
   }
 
   google::protobuf::FileDescriptorSet fds;
@@ -406,7 +424,6 @@ absl::StatusOr<ExportResponse> SceneObjectImportImpl::Export(
       .user_data_fds = fds,
   };
 
-  const auto& scene_object = request->scene_object().proto();
   if (request->include_geometries()) {
     if (geometry_library_ == nullptr) {
       return absl::InternalError("Geometry library is not initialized.");
