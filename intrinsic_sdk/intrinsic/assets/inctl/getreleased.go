@@ -38,8 +38,9 @@ func GetCommand() *cobra.Command {
 	flags := cmdutils.NewCmdFlags()
 
 	cmd := &cobra.Command{
-		Use:   "get_released id_version",
-		Short: "Get information about the specified Asset version from the AssetCatalog.",
+		Use:        "get_released id_version",
+		Short:      "Get information about the specified Asset version from the AssetCatalog.",
+		Deprecated: "Use inctl asset catalog get",
 		Example: `
   $ inctl asset get_released some.package.my_skill.0.0.1
 `,
@@ -107,8 +108,9 @@ func GetBatchCommand() *cobra.Command {
 	flags := cmdutils.NewCmdFlags()
 
 	cmd := &cobra.Command{
-		Use:   "get_released id_version_1 id_version_2 ...",
-		Short: "Get information about the specified Assets from the AssetCatalog.",
+		Use:        "get_released id_version_1 id_version_2 ...",
+		Short:      "Get information about the specified Assets from the AssetCatalog.",
+		Deprecated: "Use inctl asset catalog get (or inctl asset catalog internal get)",
 		Example: `
   $ inctl asset get_released some.package.my_skill.0.0.1 some.package.my_other_skill.0.0.1
 `,
