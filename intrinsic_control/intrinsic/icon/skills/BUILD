@@ -840,9 +840,3 @@ cc_skill(
         ":set_payload_cc_proto",
     ],
 )
-
-# ----------------------------------------------------------------------------
-# Skill definition for 'visual_servoing'
-
-# ----------------------------------------------------------------------------
-# Skill definition for 'search_target'
