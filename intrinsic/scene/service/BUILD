@@ -87,6 +87,26 @@ cc_library(
 )
 
 cc_library(
+    name = "scene_object_exporter",
+    srcs = ["scene_object_exporter.cc"],
+    hdrs = ["scene_object_exporter.h"],
+    deps = [
+        "//intrinsic/scene/mesh:scene_object_to_glb",
+        "//intrinsic/scene/sdf:scene_object_to_sdf",
+        "//intrinsic/scene/sdf:scene_object_to_zipped_sdf",
+        "//intrinsic_sdk/intrinsic/geometry/storage:geometry_library",
+        "//intrinsic_sdk/intrinsic/scene/validate:scene_object_validation",
+        "//intrinsic_sdk/intrinsic/util/proto:descriptors",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@com_google_protobuf//:protobuf",
+        "@intrinsic_apis//intrinsic/scene/proto/v1:export_cc_proto",
+        "@intrinsic_apis//intrinsic/scene/proto/v1:scene_object_cc_proto",
+    ],
+)
+
+cc_library(
     name = "scene_object_import",
     srcs = ["scene_object_import.cc"],
     hdrs = ["scene_object_import.h"],
@@ -100,6 +120,7 @@ cc_library(
         ":import_cache",
         ":post_process_imported_scene",
         ":scene_file_discovery",
+        ":scene_object_exporter",
         "//intrinsic/geometry/api:file_io",
         "//intrinsic/geometry/compatibility:io",
         "//intrinsic/geometry/processing:pipeline_config_cc_proto",
@@ -111,14 +132,11 @@ cc_library(
         "//intrinsic/longrunning/cc:operations_proxy",
         "//intrinsic/scene/instantiation:imported_scene_instantiator_h",
         "//intrinsic/scene/mesh:scene_object_from_mesh_file",
-        "//intrinsic/scene/mesh:scene_object_to_glb",
         "//intrinsic/scene/processing:scale_imported_scene",
         "//intrinsic/scene/processing:transform_imported_scene",
         "//intrinsic/scene/proto/v1:imported_scene_updates_cc_proto",
         "//intrinsic/scene/proto/v1:scene_object_internal_cc_grpc_proto",
         "//intrinsic/scene/sdf:scene_object_from_zipped_sdf",
-        "//intrinsic/scene/sdf:scene_object_to_sdf",
-        "//intrinsic/scene/sdf:scene_object_to_zipped_sdf",
         "//intrinsic/stats:scoped_span",
         "//intrinsic/util/archive:unzip",
         "//intrinsic/util/proto:pb_hash",
@@ -141,7 +159,6 @@ cc_library(
         "//intrinsic_sdk/intrinsic/scene/validate:scene_object_validation",
         "//intrinsic_sdk/intrinsic/util:lru_cache",
         "//intrinsic_sdk/intrinsic/util:proto_time",
-        "//intrinsic_sdk/intrinsic/util/proto:descriptors",
         "//intrinsic_sdk/intrinsic/util/status:ret_check",
         "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "//intrinsic_sdk/intrinsic/util/status:status_macros_grpc",

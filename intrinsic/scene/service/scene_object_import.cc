@@ -37,7 +37,6 @@
 #include "absl/time/time.h"
 #include "google/longrunning/operations.pb.h"
 #include "google/protobuf/any.pb.h"
-#include "google/protobuf/struct.pb.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "google/type/color.pb.h"
 #include "grpcpp/client_context.h"
@@ -61,7 +60,6 @@
 #include "intrinsic/math/proto_conversion.h"
 #include "intrinsic/scene/instantiation/imported_scene_instantiator.h"
 #include "intrinsic/scene/mesh/scene_object_from_mesh_file.h"
-#include "intrinsic/scene/mesh/scene_object_to_glb.h"
 #include "intrinsic/scene/proto/v1/export.pb.h"
 #include "intrinsic/scene/proto/v1/imported_scene.pb.h"
 #include "intrinsic/scene/proto/v1/scene_object.pb.h"
@@ -69,8 +67,6 @@
 #include "intrinsic/scene/proto/v1/scene_object_internal.pb.h"
 #include "intrinsic/scene/sdf/scene_object_from_sdf.h"
 #include "intrinsic/scene/sdf/scene_object_from_zipped_sdf.h"
-#include "intrinsic/scene/sdf/scene_object_to_sdf.h"
-#include "intrinsic/scene/sdf/scene_object_to_zipped_sdf.h"
 #include "intrinsic/scene/sdf/sdf_path_resolver.h"
 #include "intrinsic/scene/sdf/sim_spec_from_sdf.h"
 #include "intrinsic/scene/service/generate_import_metadata.h"
@@ -78,12 +74,12 @@
 #include "intrinsic/scene/service/import_cache.h"
 #include "intrinsic/scene/service/post_process_imported_scene.h"
 #include "intrinsic/scene/service/scene_file_discovery.h"
+#include "intrinsic/scene/service/scene_object_exporter.h"
 #include "intrinsic/scene/usd/scene_object_from_usd.h"
 #include "intrinsic/scene/validate/scene_object_validate_geo.h"
 #include "intrinsic/scene/validate/scene_object_validation.h"
 #include "intrinsic/stats/scoped_span.h"
 #include "intrinsic/util/archive/unzip.h"
-#include "intrinsic/util/proto/descriptors.h"
 #include "intrinsic/util/proto_time.h"
 #include "intrinsic/util/status/status_macros.h"
 #include "intrinsic/util/status/status_macros_grpc.h"
@@ -105,11 +101,6 @@ using ::intrinsic::internal::SupportedSdfExtensions;
 
 namespace {
 
-using ::intrinsic::scene_object::SceneObjectToGlb;
-using ::intrinsic::scene_object::SceneObjectToZippedSdf;
-using ::intrinsic::scene_object::ValidateSceneObject;
-using ::intrinsic::sdf::SceneObjectToSdf;
-using ::intrinsic::sdf::SceneObjectToSdfOptions;
 using ::intrinsic_proto::geometry::GeometryService;
 using ::intrinsic_proto::scene_object::v1::ExportRequest;
 using ::intrinsic_proto::scene_object::v1::ExportResponse;
@@ -374,58 +365,10 @@ SceneObjectImportImpl::InstantiateImportedScene(
 
 absl::StatusOr<ExportResponse> SceneObjectImportImpl::Export(
     grpc::ServerContext* absl_nonnull context, const ExportRequest* request) {
-  if (request->format() != ExportRequest::EXPORT_FORMAT_SDF &&
-      request->format() != ExportRequest::EXPORT_FORMAT_GLB) {
-    return absl::UnimplementedError(
-        "Only SDF and GLB formats are currently supported.");
+  if (geometry_library_ == nullptr) {
+    return absl::InternalError("Geometry library is not initialized.");
   }
-
-  if (!request->has_scene_object()) {
-    return absl::InvalidArgumentError("Request does not contain SceneObject.");
-  }
-
-  const SceneObject& scene_object = request->scene_object().proto();
-  INTR_RETURN_IF_ERROR(ValidateSceneObject(scene_object));
-
-  if (request->format() == ExportRequest::EXPORT_FORMAT_GLB) {
-    if (geometry_library_ == nullptr) {
-      return absl::InternalError("Geometry library is not initialized.");
-    }
-    ExportResponse response;
-    INTR_ASSIGN_OR_RETURN(*response.mutable_glb(),
-                          SceneObjectToGlb(scene_object, *geometry_library_));
-    return response;
-  }
-
-  google::protobuf::FileDescriptorSet fds;
-  if (request->include_user_data()) {
-    // Some SceneObject assets may not have fds set correctly. So always merge
-    // fds for `Struct` (a known type) to prevent avoidable serialization
-    // errors.
-    fds = request->fds();
-    MergeFileDescriptorSet<google::protobuf::Struct>(fds);
-  }
-  SceneObjectToSdfOptions sdf_options = {
-      .serialize_user_data = request->include_user_data(),
-      .user_data_fds = fds,
-  };
-
-  if (request->include_geometries()) {
-    if (geometry_library_ == nullptr) {
-      return absl::InternalError("Geometry library is not initialized.");
-    }
-    sdf_options.geometry_deserializer = &geometry_library_->Deserializer();
-    ExportResponse response;
-    INTR_ASSIGN_OR_RETURN(*response.mutable_zip_archive(),
-                          SceneObjectToZippedSdf(scene_object, sdf_options));
-    return response;
-  }
-
-  INTR_ASSIGN_OR_RETURN(std::string sdf_content,
-                        SceneObjectToSdf(scene_object, sdf_options));
-  ExportResponse response;
-  response.set_sdf(std::move(sdf_content));
-  return response;
+  return ExportSceneObject(*request, *geometry_library_);
 }
 
 absl::StatusOr<google::longrunning::Operation>
