@@ -414,6 +414,10 @@ SceneObjectImportImpl::ImportSceneObjectOperation(
   if (operation_context.GetStopSource().stop_requested()) {
     return absl::CancelledError("Cancelled");
   }
+  if (!request.has_file()) {
+    return absl::InvalidArgumentError(
+        "Request does not contain file data for importing a scene object.");
+  }
   const auto& file = request.file();
   intrinsic::stats::ScopedSpan span("ImportSceneObject");
   span.AddAttribute("scene_object_name", request.config().scene_object_name());
@@ -490,7 +494,7 @@ SceneObjectImportImpl::ImportSceneObjectOperation(
         CreateSingleObjectImportedScene(std::move(*cached_scene_object));
   } else {
     if (request.file().file_type() == SceneFileData::ZIP_BUNDLE ||
-        SceneFileData::UNSPECIFIED) {
+        request.file().file_type() == SceneFileData::UNSPECIFIED) {
       INTR_RETURN_IF_ERROR(UnzipData(
           file.data(), temp_path.path(),
           {.strip_common_prefix_directories = true,
@@ -571,9 +575,16 @@ SceneObjectImportImpl::ImportSceneObjectOperation(
                         GenerateImportMetadata(
                             imported_scene, geometry_library_->Deserializer()));
 
+  if (imported_scene.scene_objects().objects().empty()) {
+    return absl::InternalError("Imported scene contains no objects.");
+  }
+
   ImportSceneObjectResponse response;
   *response.mutable_scene_object() =
-      std::move(imported_scene.scene_objects().objects().begin()->second);
+      std::move(imported_scene.mutable_scene_objects()
+                    ->mutable_objects()
+                    ->begin()
+                    ->second);
   if (result_metadata.scene_object_to_visual_stats().contains(
           response.scene_object().name())) {
     *response.mutable_visual_stats() =
@@ -692,6 +703,11 @@ absl::StatusOr<ImportSceneResult> SceneObjectImportImpl::ImportSceneOperation(
 
   // Import actual file if not cached.
   if (imported_scene.scene_objects().objects().empty()) {
+    if (!request.has_scene_file_data()) {
+      return absl::InvalidArgumentError(
+          "Request does not contain valid scene file data for import into a "
+          "scene object.");
+    }
     if (request.scene_file_data().file_type() == SceneFileData::ZIP_BUNDLE ||
         request.scene_file_data().file_type() == SceneFileData::UNSPECIFIED) {
       INTR_RETURN_IF_ERROR(UnzipData(
@@ -727,6 +743,9 @@ absl::StatusOr<ImportSceneResult> SceneObjectImportImpl::ImportSceneOperation(
         INTR_RETURN_IF_ERROR(
             raw_import_cache_.StoreImportedScene(file_hash, imported_scene));
       } else {
+        if (imported_scene.scene_objects().objects().empty()) {
+          return absl::InternalError("Imported scene contains no objects.");
+        }
         INTR_RETURN_IF_ERROR(raw_import_cache_.StoreSceneObject(
             file_hash,
             imported_scene.scene_objects().objects().begin()->second));
