@@ -643,7 +643,7 @@ func nodeFromAsset(ctx context.Context, assetID string, sc *SolutionContext) (*n
 // the `ResolvedDependency` fields.
 func collectDependencies(config *anypb.Any, fds *descriptorpb.FileDescriptorSet) ([]*dependency, error) {
 	var deps []*dependency
-	err := traversal.ForEachResolvedDependency(config, fds, func(dep *dependencypb.Dependency, msg *rdpb.ResolvedDependency) (*rdpb.ResolvedDependency, error) {
+	err := traversal.ForEachResolvedDependency(config, fds, func(dep *dependencypb.Dependency, msg *rdpb.ResolvedDependency, _ traversal.FieldContext) (*rdpb.ResolvedDependency, error) {
 		if msg == nil {
 			return nil, nil
 		}
