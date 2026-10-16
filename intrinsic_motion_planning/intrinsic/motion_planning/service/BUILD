@@ -210,7 +210,7 @@ intrinsic_service(
     images = [
         ":motion-planner-service-image.tar",
         ":motion_planner_service_httpjson_bridge",
-    ] + [],
+    ],
     manifest = "motion_planner_service_manifest.textproto",
     deps = [
         "//intrinsic_motion_planning/intrinsic/motion_planning/proto/v1:motion_planner_service_proto",
