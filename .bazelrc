@@ -104,7 +104,9 @@ common:intrinsic -c opt
 
 
 # go/sponge-undeclared-outputs only works if outputs are zipped.
-test --zip_undeclared_test_outputs
+# Set for every command, not only test: a test-only option gives test targets a
+# different configuration, so `bazel test` after `bazel build` re-analyzes them.
+common --zip_undeclared_test_outputs
 
 # Do not write to the shared RBE cache when running Bazel locally. This can lead
 # to cache poisoning and false positivies in the RBE based CI.
