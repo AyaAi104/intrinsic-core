@@ -56,12 +56,6 @@ go_library(
 )
 
 alias(
-    name = "descriptor",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:descriptor",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "descriptors",
     actual = "//intrinsic_sdk/intrinsic/util/proto:descriptors",
     tags = ["go/intrinsic-ioc-transition-tdd"],
@@ -102,12 +96,6 @@ alias(
 )
 
 alias(
-    name = "registryutil",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:registryutil",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "type_url",
     actual = "//intrinsic_sdk/intrinsic/util/proto:type_url",
     tags = ["go/intrinsic-ioc-transition-tdd"],
@@ -131,18 +119,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-alias(
-    name = "names",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:names",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "walkmessages",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:walkmessages",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 cc_library(
     name = "walk_messages",
     srcs = ["walk_messages.cc"],
@@ -155,10 +131,4 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@com_google_protobuf//:protobuf",
     ],
-)
-
-alias(
-    name = "fieldbehavior",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:fieldbehavior",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
 )

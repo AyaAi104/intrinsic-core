@@ -21,8 +21,8 @@ go_library(
     visibility = ["//intrinsic:intrinsic_internal"],
     deps = [
         "//intrinsic/assets/catalog/proto/v1:asset_catalog_internal_go_proto",
-        "//intrinsic/kubernetes/acl:clientcontext",
-        "//intrinsic/util/proto:names",
+        "//intrinsic_sdk/intrinsic/kubernetes/acl:clientcontext",
+        "//intrinsic_sdk/intrinsic/util/proto:names",
         "@intrinsic_apis//intrinsic/assets/data/proto/v1:data_asset_go_proto",
         "@intrinsic_apis//intrinsic/assets/hardware_devices/proto/v1:hardware_device_manifest_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto:asset_type_go_proto",

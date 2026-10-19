@@ -125,9 +125,3 @@ go_library(
         "@org_golang_google_protobuf//proto",
     ],
 )
-
-alias(
-    name = "operationmode",
-    actual = "//intrinsic_sdk/intrinsic/config:operationmode",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)

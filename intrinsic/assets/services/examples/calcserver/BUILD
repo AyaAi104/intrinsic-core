@@ -16,9 +16,9 @@ load("//bazel:container.bzl", "container_image")
 load("//bazel:go_macros.bzl", "go_binary", "go_library")
 load("//bazel:python.bzl", "py_test")
 load("//intrinsic/apps/testing/e2e:app_e2e_test.bzl", "app_e2e_test")
-load("//intrinsic/assets/build_defs:asset.bzl", "intrinsic_asset_instance")
 load("//intrinsic/assets/build_defs:solution.bzl", "intrinsic_solution")
-load("//intrinsic/assets/services/build_defs:services.bzl", "intrinsic_service")
+load("//intrinsic_sdk/intrinsic/assets/build_defs:asset.bzl", "intrinsic_asset_instance")
+load("//intrinsic_sdk/intrinsic/assets/services/build_defs:services.bzl", "intrinsic_service")
 
 package(default_visibility = [
     "//visibility:public",
@@ -35,7 +35,7 @@ go_library(
     srcs = ["calcserver.go"],
     importpath = "intrinsic/assets/services/examples/calcserver/calcserver",
     deps = [
-        "//intrinsic/assets/dependencies:utils",
+        "//intrinsic_sdk/intrinsic/assets/dependencies:utils",
         "@com_github_golang_glog//:go_default_library",
         "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_go_proto",
         "@intrinsic_apis//intrinsic/assets/services/examples/calcserver:calc_server_go_proto",
@@ -52,9 +52,9 @@ go_binary(
     importpath = "intrinsic/assets/services/examples/calcserver/calcserver_main_go",
     deps = [
         ":calcserver",
-        "//intrinsic/assets/dependencies:utils",
         "//intrinsic/kubernetes:intrinsic",
-        "//intrinsic/util/proto:protoio",
+        "//intrinsic_sdk/intrinsic/assets/dependencies:utils",
+        "//intrinsic_sdk/intrinsic/util/proto:protoio",
         "@com_github_golang_glog//:go_default_library",
         "@intrinsic_apis//intrinsic/assets/services/examples/calcserver:calc_server_go_proto",
         "@intrinsic_apis//intrinsic/assets/services/proto/v1:dynamic_reconfiguration_go_proto",

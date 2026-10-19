@@ -14,13 +14,6 @@
 
 load("//bazel:go_macros.bzl", "go_library")
 
-alias(
-    name = "bundleimages",
-    actual = "//intrinsic_sdk/intrinsic/assets/services:bundleimages",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:intrinsic_internal"],
-)
-
 go_library(
     name = "inspection",
     srcs = ["inspection.go"],
@@ -46,7 +39,7 @@ go_library(
         # LINT.ThenChange(//intrinsic/assets/deploy/renderutil.go:supported_service_state_versions)
         "@intrinsic_apis//intrinsic/assets/services/proto/v1:system_service_state_go_proto",
         "//intrinsic/skills/internal:configmapwatcher",
-        "//intrinsic/util/status:extstatus",
+        "//intrinsic_sdk/intrinsic/util/status:extstatus",
         "@com_github_golang_glog//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
@@ -62,13 +55,6 @@ go_library(
         "@org_golang_google_grpc//status:go_default_library",
         "@org_golang_x_sync//errgroup:go_default_library",
     ],
-)
-
-alias(
-    name = "servicevalidate",
-    actual = "//intrinsic_sdk/intrinsic/assets/services:servicevalidate",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
 )
 
 exports_files(

@@ -14,8 +14,8 @@
 
 """Bazel rules for solutions."""
 
-load("//intrinsic/assets/build_defs:asset.bzl", "AssetCatalogRefInfo", "AssetInfo", "AssetInstanceInfo", "AssetLocalInfo")
 load("//intrinsic/util/path_resolver:paths.bzl", "WRAPPER_HEADER", "to_rlocation_path")
+load("//intrinsic_sdk/intrinsic/assets/build_defs:asset.bzl", "AssetCatalogRefInfo", "AssetInfo", "AssetInstanceInfo", "AssetLocalInfo")
 
 SolutionInfo = provider(
     "provided by the intrinsic_solution() rule",

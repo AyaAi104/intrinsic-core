@@ -98,12 +98,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-alias(
-    name = "extstatus",
-    actual = "//intrinsic_sdk/intrinsic/util/status:extstatus",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 go_library(
     name = "approximatestatus",
     srcs = ["approximatestatus.go"],

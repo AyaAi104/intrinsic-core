@@ -17,27 +17,6 @@
 load("//bazel:go_macros.bzl", "go_library")
 
 alias(
-    name = "baseclientutils",
-    actual = "//intrinsic_sdk/intrinsic/assets:baseclientutils",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:internal_api_users"],
-)
-
-alias(
-    name = "clientutils",
-    actual = "//intrinsic_sdk/intrinsic/assets:clientutils",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:internal_api_users"],
-)
-
-alias(
-    name = "cmdutils",
-    actual = "//intrinsic_sdk/intrinsic/assets:cmdutils",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:internal_api_users"],
-)
-
-alias(
     name = "id_utils",
     actual = "//intrinsic_sdk/intrinsic/assets:id_utils",
     tags = ["go/intrinsic-ioc-transition-tdd"],
@@ -58,15 +37,6 @@ alias(
     visibility = ["//intrinsic:public_api_users"],
 )
 
-alias(
-    name = "imagetransfer",
-    actual = "//intrinsic_sdk/intrinsic/assets:imagetransfer",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = [
-        "//intrinsic:internal_api_users",
-    ],
-)
-
 go_library(
     name = "pageutils",
     srcs = ["pageutils.go"],
@@ -81,50 +51,8 @@ go_library(
 )
 
 alias(
-    name = "throttle",
-    actual = "//intrinsic_sdk/intrinsic/assets:throttle",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic/assets:__subpackages__"],
-)
-
-alias(
-    name = "typeutils",
-    actual = "//intrinsic_sdk/intrinsic/assets:typeutils",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:internal_api_users"],
-)
-
-alias(
-    name = "viewutils",
-    actual = "//intrinsic_sdk/intrinsic/assets:viewutils",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:internal_api_users"],
-)
-
-alias(
-    name = "bundle",
-    actual = "//intrinsic_sdk/intrinsic/assets:bundle",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:internal_api_users"],
-)
-
-alias(
-    name = "metadatautils",
-    actual = "//intrinsic_sdk/intrinsic/assets:metadatautils",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
-)
-
-alias(
     name = "interfaceutils",
     actual = "//intrinsic_sdk/intrinsic/assets:interfaceutils",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
-)
-
-alias(
-    name = "interface_utils",
-    actual = "//intrinsic_sdk/intrinsic/assets:interface_utils",
     tags = ["go/intrinsic-ioc-transition-tdd"],
     visibility = ["//intrinsic:public_api_users"],
 )
@@ -138,9 +66,9 @@ go_library(
         ":idutils",
         ":interfaceutils",
         "//intrinsic/assets/hardware_devices:graph",
-        "//intrinsic/assets/processes/proto:process_asset_go_proto",
-        "//intrinsic/util/proto:descriptor",
-        "//intrinsic/util/proto:names",
+        "//intrinsic_sdk/intrinsic/assets/processes/proto:process_asset_go_proto",
+        "//intrinsic_sdk/intrinsic/util/proto:descriptor",
+        "//intrinsic_sdk/intrinsic/util/proto:names",
         "@intrinsic_apis//intrinsic/assets/data/proto/v1:data_asset_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto:metadata_go_proto",
         "@intrinsic_apis//intrinsic/assets/scene_objects/proto:scene_object_manifest_go_proto",
@@ -150,13 +78,6 @@ go_library(
         "@org_golang_google_grpc//status:go_default_library",
         "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
     ],
-)
-
-alias(
-    name = "referenceddata",
-    actual = "//intrinsic_sdk/intrinsic/assets:referenceddata",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
 )
 
 go_library(

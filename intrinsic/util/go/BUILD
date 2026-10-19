@@ -30,13 +30,6 @@ alias(
     visibility = ["//intrinsic:internal_api_users"],
 )
 
-alias(
-    name = "validate",
-    actual = "//intrinsic_sdk/intrinsic/util/go:validate",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:internal_api_users"],
-)
-
 go_library(
     name = "build",
     srcs = ["build.go"],

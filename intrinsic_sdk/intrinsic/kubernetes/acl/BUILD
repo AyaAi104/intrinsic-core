@@ -27,7 +27,6 @@ go_library(
         ":__subpackages__",
         "//intrinsic/kubernetes:__subpackages__",
         "//intrinsic/kubernetes/acl:__pkg__",
-        "//intrinsic/skills/tools/skill/cmd:__subpackages__",
         "//intrinsic/tools/inctl/util:__subpackages__",
         "//intrinsic_sdk/intrinsic/kubernetes:__subpackages__",
         "//intrinsic_sdk/intrinsic/skills/tools/skill/cmd:__subpackages__",
