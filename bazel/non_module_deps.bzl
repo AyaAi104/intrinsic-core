@@ -18,6 +18,9 @@ Module extension for non-module dependencies
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file", "http_jar")
 
+# TODO(b/572956581): Remove NVIDIA Pose Estimator out of insrc
+load("//bazel:nvidia_pose_estimator_models.bzl", "nvidia_pose_estimator_models")  
+
 # Module extension function signatures include a ctx variable, which should not be removed.
 def _non_module_deps_impl(
         ctx):  # @unused
@@ -72,6 +75,11 @@ def _non_module_deps_impl(
         urls = ["https://github.com/intrinsic-opensource/foundationpose_perception_pipeline/archive/4d79cf040a981d9375f1e8c8b0d71306b968ed67.tar.gz"],
     )
 
+    # foundationpose_refine_onnx, foundationpose_score_onnx, and
+    # foundationstereo_onnx are gated behind
+    # --//intrinsic_perception/intrinsic/perception/service/nvidia_pose_estimator:download_weights=True
+    # so CI does not fetch them unnecessarily.
+
     http_file(
         name = "foundationpose_refine_onnx",
         downloaded_file_path = "refiner_net.onnx",
@@ -97,6 +105,20 @@ def _non_module_deps_impl(
         downloaded_file_path = "deployable_foundation_stereo_s_dynamic_v2.0.onnx",
         sha256 = "a001a7bc0512a0bc3b3218194e924784e58b20656c6f1ea2c151024e555cfd64",
         urls = ["https://api.ngc.nvidia.com/v2/models/nvidia/tao/foundationstereo/versions/deployable_foundation_stereo_s_dynamic_v2.0/files/deployable_foundation_stereo_s_dynamic_v2.0.onnx"],
+    )
+
+    # Locally staged model files. These files need to be fetched manually to the
+    # $NVIDIA_POSE_ESTIMATOR_MODELS_DIR directory. Defaults to:
+    # intrinsic_perception/intrinsic/perception/service/nvidia_pose_estimator/models/
+    #
+    #   - SAM 3 ONNX graphs and BPE vocabulary, exported from the gated SAM 3
+    #     checkpoint via:
+    #     intrinsic_perception/intrinsic/perception/service/nvidia_pose_estimator/scripts/prepare_sam3_models.sh
+    #   - [Optional] Precompiled TensorRT plans.
+
+    # Tracked for removal from insrc in http://b/572956581
+    nvidia_pose_estimator_models(
+        name = "nvidia_pose_estimator_models",
     )
 
     # For ur_calibration.[cc/h]

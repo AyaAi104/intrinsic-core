@@ -63,3 +63,10 @@ alias(
         "//intrinsic:intrinsic_internal",
     ],
 )
+
+alias(
+    name = "installed_assets_py_pb2",
+    actual = "//intrinsic_sdk/intrinsic/assets/proto:installed_assets_py_pb2",
+    tags = ["go/intrinsic-ioc-transition-tdd"],
+    visibility = ["//intrinsic:public_api_users"],
+)

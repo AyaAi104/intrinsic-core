@@ -45,6 +45,13 @@ alias(
 )
 
 alias(
+    name = "id_utils_py",
+    actual = "//intrinsic_sdk/intrinsic/assets:id_utils_py",
+    tags = ["go/intrinsic-ioc-transition-tdd"],
+    visibility = ["//intrinsic:public_api_users"],
+)
+
+alias(
     name = "idutils",
     actual = "//intrinsic_sdk/intrinsic/assets:idutils",
     tags = ["go/intrinsic-ioc-transition-tdd"],

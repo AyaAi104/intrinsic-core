@@ -643,6 +643,7 @@ use_repo(
     "cgal",
     "coal",
     "firestore_emulator",
+    # TODO(b/572956581): Remove NVIDIA Pose Estimator out of insrc
     "foundation_pose_inference_library",  
     "foundationpose_perception_pipeline",  
     "foundationpose_refine_onnx",  
@@ -650,6 +651,7 @@ use_repo(
     "foundationstereo_onnx",  
     "kubebuilder_test_tools",
     "kubernetes_json_schema",
+    "nvidia_pose_estimator_models",  # TODO(b/572956581): Remove NVIDIA Pose Estimator out of insrc
     "sysroot_glvnd_stubs",
     "ur_calibration",
 )
