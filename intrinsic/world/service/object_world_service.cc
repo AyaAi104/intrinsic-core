@@ -21,6 +21,7 @@
 #include <future>  // NOLINT(build/c++11)
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <string>
 #include <utility>
@@ -146,6 +147,37 @@ namespace {
 
 constexpr char kWorldIdHintPattern[] = "[_a-zA-Z][_a-zA-Z0-9]*";
 const LazyRE2 kWorldIdHintRegexp = {kWorldIdHintPattern};
+
+// Sorts objects or frames by name.
+template <typename T>
+void SortByName(std::vector<T*>& items) {
+  absl::c_sort(items, [](const T* a, const T* b) {
+    return a->GetName().value() < b->GetName().value();
+  });
+}
+
+// Returns the given entity ids of an object sorted by local entity name,
+// which are unique within the scope of an object.
+template <typename Container>
+std::vector<typename Container::value_type> SortedByLocalName(
+    const World& world, const Container& entity_ids) {
+  using Id = typename Container::value_type;
+
+  // Creates a vector to only call `GetLocalNameForEntityById` once.
+  std::vector<std::pair<std::string, Id>> keyed;
+  keyed.reserve(entity_ids.size());
+  for (const Id& id : entity_ids) {
+    keyed.emplace_back(world.GetLocalNameForEntityById(id), id);
+  }
+  absl::c_sort(keyed,
+               [](const auto& a, const auto& b) { return a.first < b.first; });
+  std::vector<Id> result;
+  result.reserve(keyed.size());
+  for (const auto& [_, id] : keyed) {
+    result.push_back(id);
+  }
+  return result;
+}
 
 bool ShouldKeep(const WorldObject& object,
                 const WorldHashSet<std::string>& object_ids,
@@ -385,9 +417,19 @@ MaybeExtractUpdateKinematicObjectPropertiesRequest(
   intrinsic_proto::world::UpdateKinematicObjectPropertiesRequest object_update;
   bool has_updates = false;
 
+  // Named joint configurations are processed in name order to generate a stable
+  // order of updates.
+  const auto sorted_names = [](const auto& configurations) {
+    auto keys = std::views::keys(configurations);
+    std::vector<std::string> names(keys.begin(), keys.end());
+    absl::c_sort(names);
+    return names;
+  };
+
   // Removes named joint configurations that are in the baseline object but not
   // in the updated object.
-  for (const auto& [name, config] : baseline_visitor.joint_configurations) {
+  for (const std::string& name :
+       sorted_names(baseline_visitor.joint_configurations)) {
     if (!visitor.joint_configurations.contains(name)) {
       object_update.add_named_joint_configurations_to_remove(name);
       has_updates = true;
@@ -395,7 +437,8 @@ MaybeExtractUpdateKinematicObjectPropertiesRequest(
   }
 
   // Adds the new named joint configurations.
-  for (const auto& [name, config] : visitor.joint_configurations) {
+  for (const std::string& name : sorted_names(visitor.joint_configurations)) {
+    const eigenmath::VectorXd& config = visitor.joint_configurations.at(name);
     const auto& baseline_configs = baseline_visitor.joint_configurations;
     bool approx_equal = baseline_configs.contains(name);
     for (int i = 0; i < config.size(); ++i) {
@@ -413,6 +456,9 @@ MaybeExtractUpdateKinematicObjectPropertiesRequest(
   }
 
   if (!visitor.kinematic_chain.empty() && visitor.are_kinematics_updated) {
+    std::vector<intrinsic_proto::world::RobotEntityKinematicProperties::Entity>
+        entity_updates;
+    entity_updates.reserve(visitor.kinematic_chain.size());
     for (const auto& entity_data : visitor.kinematic_chain) {
       intrinsic_proto::world::RobotEntityKinematicProperties::Entity update;
       if (entity_data.first.EntityNames().size() != 1) {
@@ -422,6 +468,14 @@ MaybeExtractUpdateKinematicObjectPropertiesRequest(
       }
       update.set_entity_name(*entity_data.first.EntityNames().begin());
       *update.mutable_parent_t_entity() = ToProto(entity_data.second);
+      entity_updates.push_back(std::move(update));
+    }
+    // The kinematic chain is sorted by entity name to generate a stable order
+    // of updates.
+    absl::c_sort(entity_updates, [](const auto& a, const auto& b) {
+      return a.entity_name() < b.entity_name();
+    });
+    for (auto& update : entity_updates) {
       *object_update.mutable_robot_kinematics_update()
            ->mutable_robot_entity_updates()
            ->add_entities() = std::move(update);
@@ -1031,9 +1085,12 @@ ExtractChildFramesTree(const Frame* frame, const std::string& object_name) {
       by_name->set_object_name(object_name);
     }
 
-    for (const Frame* child_frame : current_frame->GetChildFrames()) {
-      stack.push_back(child_frame);
-    }
+    // Child frames are pushed onto the stack in reverse name order so that
+    // popping from the back visits siblings in ascending alphabetical order
+    // while preserving topological (parent-before-child) pre-order traversal.
+    const std::vector<const Frame*> child_frames =
+        current_frame->GetChildFramesSorted();
+    stack.insert(stack.end(), child_frames.rbegin(), child_frames.rend());
   }
   return updates;
 }
@@ -1061,7 +1118,11 @@ ExtractChildFrames(const WorldObject* baseline_object,
         absl::StrJoin(object.GetFullPathName(), ".", absl::StreamFormatter())));
   }
 
-  std::vector<const Frame*> frames_to_check = object.GetChildFrames();
+  // Frames are pushed onto the stack in reverse name order so that popping from
+  // the back visits siblings in ascending alphabetical order while preserving
+  // topological (parent-before-child) pre-order traversal.
+  std::vector<const Frame*> frames_to_check = object.GetChildFramesSorted();
+  absl::c_reverse(frames_to_check);
   while (!frames_to_check.empty()) {
     const Frame* frame = frames_to_check.back();
     frames_to_check.pop_back();
@@ -1151,7 +1212,8 @@ ExtractChildFrames(const WorldObject* baseline_object,
         }
 
         // Added child frames should be saved.
-        for (const Frame* child_frame : frame->GetChildFrames()) {
+        std::vector<const Frame*> ppr_child_frames;
+        for (const Frame* child_frame : frame->GetChildFramesSorted()) {
           INTR_ASSIGN_OR_RETURN(
               const WorldEntity* child_frame_entity,
               world.GetEntityById(child_frame->GetEntityId()));
@@ -1161,9 +1223,13 @@ ExtractChildFrames(const WorldObject* baseline_object,
                 ExtractChildFramesTree(child_frame, object.GetName().value()));
             updates.MergeFrom(frame_updates);
           } else {
-            frames_to_check.push_back(child_frame);
+            ppr_child_frames.push_back(child_frame);
           }
         }
+        // Resource child frames are pushed in reverse name order so that
+        // popping from `frames_to_check` visits them in ascending name order.
+        frames_to_check.insert(frames_to_check.end(), ppr_child_frames.rbegin(),
+                               ppr_child_frames.rend());
 
         continue;
       }
@@ -1175,7 +1241,7 @@ ExtractChildFrames(const WorldObject* baseline_object,
                    << "' which doesn't belong to its parent object instance '"
                    << object.GetName()
                    << "'. Skipping this virtual frame but saving its children.";
-      for (const Frame* child_frame : frame->GetChildFrames()) {
+      for (const Frame* child_frame : frame->GetChildFramesSorted()) {
         INTR_ASSIGN_OR_RETURN(
             const auto frame_updates,
             ExtractChildFramesTree(child_frame, object.GetName().value()));
@@ -1286,8 +1352,16 @@ ExtractCollisionExclusions(
   INTR_ASSIGN_OR_RETURN(
       const auto collision_exclusions_by_object,
       GetAllCollisionExclusionsByObject(object, world, entity_id_to_object));
-  for (const auto& [other_object, other_entities] :
-       collision_exclusions_by_object) {
+  // Iterates in a stable order.
+  auto object_keys = std::views::keys(collision_exclusions_by_object);
+  std::vector<const WorldObject*> other_objects(object_keys.begin(),
+                                                object_keys.end());
+  SortByName(other_objects);
+  const std::vector<AttachmentEntityId> sorted_entity_ids =
+      SortedByLocalName(world, object.GetEntityIds());
+  for (const WorldObject* other_object : other_objects) {
+    const std::vector<EntityId> other_entities = SortedByLocalName(
+        world, collision_exclusions_by_object.at(other_object));
     // TODO(b/260390260) remove this check and use references by id to objects
     // once resource ids are stable across world decomposition and recomposition
     // into resources
@@ -1355,7 +1429,7 @@ ExtractCollisionExclusions(
     }
 
     // Case 3: entity is collision excluded from entire other object.
-    for (const AttachmentEntityId& entity_id : object.GetEntityIds()) {
+    for (const AttachmentEntityId& entity_id : sorted_entity_ids) {
       INTR_ASSIGN_OR_RETURN(const WorldEntity* entity,
                             world.GetEntityById(entity_id));
       if (!entity->HasComponent<CollisionComponent>()) {
@@ -1411,7 +1485,8 @@ ExtractResourceDeletions(const World& baseline_entity_world,
                         ObjectWorld::CreateView(current_entity_world));
 
   intrinsic_proto::world::ObjectWorldUpdates deletion_updates;
-  for (const WorldObject* baseline_object : baseline_world->GetObjects()) {
+  for (const WorldObject* baseline_object :
+       baseline_world->GetObjectsSorted()) {
     absl::StatusOr<const WorldObject*> current_object =
         current_world->GetObject(baseline_object->GetName());
     if (!current_object.ok()) {
@@ -1461,9 +1536,13 @@ ExtractResourceDeletions(const World& baseline_entity_world,
       }
     }
 
-    // Traverse child frames, recording the ones that were deleted.
+    // Traverse child frames in breadth-first ascending name order, recording
+    // the ones that were deleted. Resource frames cannot be deleted through
+    // the API when asset frame edits are disabled, but deletions are still
+    // emitted when such edits are enabled or when the baseline asset differs
+    // from the one the world was composed from.
     std::vector<const Frame*> baseline_frames =
-        baseline_object->GetChildFrames();
+        baseline_object->GetChildFramesSorted();
     std::deque<const Frame*> baseline_frame_queue(baseline_frames.begin(),
                                                   baseline_frames.end());
     while (!baseline_frame_queue.empty()) {
@@ -1518,7 +1597,8 @@ ExtractResourceDeletions(const World& baseline_entity_world,
         frame_by_name->set_frame_name(baseline_frame->GetName().value());
         delete_frame->set_force(true);
       } else {
-        for (const Frame* child_frame : baseline_frame->GetChildFrames()) {
+        for (const Frame* child_frame :
+             baseline_frame->GetChildFramesSorted()) {
           baseline_frame_queue.push_back(child_frame);
         }
       }
@@ -2818,9 +2898,11 @@ grpc::Status ObjectWorldService::ExtractResourceInstances(
   while (!stack.empty()) {
     auto* object = stack.back();
     stack.pop_back();
-    for (auto* child : object->GetChildren()) {
-      stack.push_back(child);
-    }
+    // Children are pushed in descending name order, so that they are visited
+    // in ascending name and deterministic order.
+    std::vector<WorldObject*> children = object->GetChildren();
+    SortByName(children);
+    stack.insert(stack.end(), children.rbegin(), children.rend());
 
     // Skip root object
     if (!object->GetCollectionEntity().has_value()) {
@@ -3028,7 +3110,11 @@ grpc::Status ObjectWorldService::ExtractResourceInstances(
 
   // Root is handled specially because it is not a resource, but can still have
   // child frames composed in using world updates.
-  for (Frame* frame : root_object->GetChildFrames()) {
+  // Root child frames are deleted while iterating, so the mutable frames are
+  // sorted here instead of using the const-only `GetChildFramesSorted()`.
+  std::vector<Frame*> root_child_frames = root_object->GetChildFrames();
+  SortByName(root_child_frames);
+  for (Frame* frame : root_child_frames) {
     INTR_ASSIGN_OR_RETURN_GRPC(
         const auto frame_updates,
         ExtractChildFramesTree(frame, root_object->GetName().value()),
