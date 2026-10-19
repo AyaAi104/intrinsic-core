@@ -282,22 +282,22 @@ cc_library(
         "//intrinsic/util/grpc:connection_params",
         "//intrinsic/util/status:status_conversion_grpc",
         "//intrinsic/util/status:status_macros",
-        "//intrinsic_control/intrinsic/icon/equipment:equipment_utils",
-        "//intrinsic_control/intrinsic/icon/skills/util:position_part_util",
+        "//intrinsic_control/intrinsic/icon/equipment:resolved_dependency_utils",
         "//intrinsic_perception/intrinsic/perception:asset_utils",
         "//intrinsic_perception/intrinsic/perception:pose_estimator_id_utils",
         "//intrinsic_perception/intrinsic/perception/cameras:camera",
         "//intrinsic_sdk/intrinsic/assets/dependencies:utils_cc",
         "//intrinsic_sdk/intrinsic/connect/cc/grpc:channel",
-        "//intrinsic_sdk/intrinsic/skills/cc:equipment_pack",
         "//intrinsic_sdk/intrinsic/skills/cc:skill_interface",
         "//intrinsic_sdk/intrinsic/skills/cc:skill_utils",
+        "//intrinsic_sdk/intrinsic/world/objects:kinematic_object",
+        "//intrinsic_sdk/intrinsic/world/objects:object_world_client",
         "//intrinsic_sdk/intrinsic/world/util:object_reference_utils",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_protobuf//:protobuf",
         "@intrinsic_apis//intrinsic/assets/data/proto/v1:data_assets_cc_grpc_proto",
@@ -321,9 +321,9 @@ proto_library(
     deps = [
         "@intrinsic_apis//intrinsic/assets/proto:field_metadata_proto",
         "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_proto",
+        "@intrinsic_apis//intrinsic/icon/proto/v1:field_metadata_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:pattern_detection_config_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:pose_estimator_id_proto",
-        "@intrinsic_apis//intrinsic/skills/proto:skill_parameter_metadata_proto",
         "@intrinsic_apis//intrinsic/world/proto:object_world_refs_proto",
     ],
 )
@@ -341,7 +341,6 @@ py_proto_library(
 skill_manifest(
     name = "initialize_calibration_manifest",
     src = "initialize_calibration_manifest.textproto",
-    incompatible_disallow_manifest_dependencies = False,
     deps = [":initialize_calibration_proto"],
 )
 
@@ -578,9 +577,9 @@ go_proto_library(
     deps = [
         "@intrinsic_apis//intrinsic/assets/proto:field_metadata_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_go_proto",
+        "@intrinsic_apis//intrinsic/icon/proto/v1:field_metadata_go_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:pattern_detection_config_go_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:pose_estimator_id_go_proto",
-        "@intrinsic_apis//intrinsic/skills/proto:skill_parameter_metadata_go_proto",
         "@intrinsic_apis//intrinsic/world/proto:object_world_refs_go_proto",
     ],
 )
