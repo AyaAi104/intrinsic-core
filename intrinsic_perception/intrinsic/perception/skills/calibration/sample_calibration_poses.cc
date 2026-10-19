@@ -26,7 +26,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
@@ -34,12 +33,10 @@
 #include "intrinsic/assets/proto/v1/resolved_dependency.pb.h"
 #include "intrinsic/eigenmath/types.h"
 #include "intrinsic/icon/cc_client/client.h"
-#include "intrinsic/icon/equipment/channel_factory.h"
-#include "intrinsic/icon/equipment/equipment_utils.h"
+#include "intrinsic/icon/equipment/resolved_dependency_utils.h"
 #include "intrinsic/icon/proto/cart_space_conversion.h"
 #include "intrinsic/icon/proto/eigen_conversion.h"
 #include "intrinsic/icon/proto/part_status.pb.h"
-#include "intrinsic/icon/skills/util/position_part_util.h"
 #include "intrinsic/icon/utils/arm_utils.h"
 #include "intrinsic/kinematics/types/cartesian_limits.h"
 #include "intrinsic/math/pose3.h"
@@ -54,10 +51,7 @@
 #include "intrinsic/perception/calibration/pose_sampling.h"
 #include "intrinsic/perception/proto/v1/camera_setup.pb.h"
 #include "intrinsic/perception/skills/calibration/sample_calibration_poses.pb.h"
-#include "intrinsic/resources/proto/resource_handle.pb.h"
-#include "intrinsic/skills/cc/equipment_pack.h"
 #include "intrinsic/skills/cc/skill_interface.h"
-#include "intrinsic/skills/cc/skill_utils.h"
 #include "intrinsic/skills/proto/footprint.pb.h"
 #include "intrinsic/util/eigen.h"
 #include "intrinsic/util/status/status_macros.h"
@@ -75,8 +69,7 @@
 namespace intrinsic::skills {
 
 std::unique_ptr<SkillInterface> SampleCalibrationPoses::CreateSkill() {
-  return std::make_unique<SampleCalibrationPoses>(
-      std::make_unique<icon::DefaultChannelFactory>());
+  return std::make_unique<SampleCalibrationPoses>();
 }
 
 namespace {
@@ -243,11 +236,8 @@ std::vector<PoseWithJointConfiguration> SamplePreCalibrationPoses(
 // Computes possible joint space solution for the given base_t_flange
 // pose, which can also be reached by a planned motion.
 absl::StatusOr<eigenmath::VectorXd> ComputeJointSpaceSolution(
-    const Pose3d& base_t_flange, const world::ObjectWorldClient& world,
-    motion_planning::MotionPlannerClient& planner,
-    const intrinsic_proto::world::ObjectReference& robot_ref,
-    const bool ensure_same_branch_ik) {
-  INTR_ASSIGN_OR_RETURN(const auto robot, world.GetKinematicObject(robot_ref));
+    const Pose3d& base_t_flange, motion_planning::MotionPlannerClient& planner,
+    const world::KinematicObject& robot, const bool ensure_same_branch_ik) {
   // TODO(darkoz): Add collision settings to skill params.
   intrinsic_proto::world::CollisionSettings collision_settings;
   intrinsic_proto::motion_planning::CartesianMotionTarget cartesian_target;
@@ -317,7 +307,6 @@ absl::StatusOr<eigenmath::VectorXd> ComputeJointSpaceSolution(
 template <typename URBG>
 absl::StatusOr<std::vector<PoseWithJointConfiguration>> SampleRandomWaypoints(
     const Pose3d& base_t_flange, const world::ObjectWorldClient& world,
-    const intrinsic_proto::world::ObjectReference& robot_ref,
     intrinsic_proto::perception::v1::CameraSetup calibration_type,
     const world::KinematicObject& robot,
     const world::WorldObject& calibration_object,
@@ -384,9 +373,8 @@ absl::StatusOr<std::vector<PoseWithJointConfiguration>> SampleRandomWaypoints(
                  DegToRad(rotation_randomization_roll_angle_degrees)},
             engine);
       }
-      auto joint_space_solution =
-          ComputeJointSpaceSolution(base_t_obj_unchecked, world, planner,
-                                    robot_ref, ensure_same_branch_ik);
+      auto joint_space_solution = ComputeJointSpaceSolution(
+          base_t_obj_unchecked, planner, robot, ensure_same_branch_ik);
       absl::StatusOr<PoseWithJointConfiguration> checked_pose;
       if (joint_space_solution.ok()) {
         checked_pose = PoseWithJointConfiguration{
@@ -475,49 +463,30 @@ SampleCalibrationPoses::ExecuteWithRandomEngine(const ExecuteRequest& request,
           ? *motion_planner_service_asset_client
           : context.motion_planner();
 
-  // Extract all required equipment.
-  const EquipmentPack equipment_pack = context.equipment();
-  INTR_ASSIGN_OR_RETURN(
-      const intrinsic_proto::resources::ResourceHandle robot_handle,
-      equipment_pack.GetHandle(kRobotEquipmentSlot));
-
-  // Backup initial robot joint configuration so robot can return to this
-  // configuration after calibration.
-  eigenmath::VectorXd robot_start_joint_configuration;
-  // We need to talk to ICON directly because the world could be stale.
-  INTR_ASSIGN_OR_RETURN(const auto connection_config,
-                        skills::GetConnectionParamsFromHandle(robot_handle));
-  absl::StatusOr<intrinsic_proto::icon::Icon2PositionPart> position_part =
-      equipment_pack.Unpack<intrinsic_proto::icon::Icon2PositionPart>(
-          kRobotEquipmentSlot, icon::kIcon2PositionPartKey);
-  if (!position_part.ok()) {
-    return absl::FailedPreconditionError(
-        absl::StrCat("ICON Equipment at slot ", kRobotEquipmentSlot,
-                     " does not have a position part."));
-  }
+  // Connect to robot's ICON server.
+  INTR_ASSIGN_OR_RETURN(icon::IconResolvedDependency icon_resolved_dependency,
+                        icon::ConnectToIconResolvedDependency(params.robot()));
 
   INTR_ASSIGN_OR_RETURN(
-      skills::ArmPartInformation arm_part_info,
-      skills::GetArmPartInformation(position_part.value(), world,
-                                    params.has_arm_part()
-                                        ? std::make_optional(params.arm_part())
-                                        : std::nullopt));
+      icon::PositionPartWithObject part_with_object,
+      icon_resolved_dependency.GetPositionPartAndKinematicObject(
+          world, params.arm_part()));
 
-  INTR_ASSIGN_OR_RETURN(const world::KinematicObject robot,
-                        world.GetKinematicObject(arm_part_info.object));
+  const world::KinematicObject& robot = part_with_object.kinematic_object;
   INTR_ASSIGN_OR_RETURN(const world::Frame flange,
                         robot.GetSingleIsoFlangeFrame());
   INTR_ASSIGN_OR_RETURN(const world::WorldObject calibration_object,
                         world.GetObject(params.calibration_object()));
 
+  // Backup initial robot joint configuration so robot can return to this
+  // configuration after calibration.
+  // We need to talk to ICON directly because the world could be stale.
+  icon::Client icon_client(icon_resolved_dependency.channel);
   INTR_ASSIGN_OR_RETURN(
-      auto channel,
-      icon_channel_factory_->MakeChannel(
-          connection_config, connect::kGrpcClientConnectDefaultTimeout));
-  icon::Client icon_client(channel);
-  INTR_ASSIGN_OR_RETURN(intrinsic_proto::icon::PartStatus part_status,
-                        icon_client.GetSinglePartStatus(arm_part_info.name));
-  robot_start_joint_configuration = icon::GetSensedJointPosition(part_status);
+      intrinsic_proto::icon::PartStatus part_status,
+      icon_client.GetSinglePartStatus(part_with_object.part_name));
+  const eigenmath::VectorXd robot_start_joint_configuration =
+      icon::GetSensedJointPosition(part_status);
 
   // Update the joint positions in the world from the sensed joint positions.
   INTR_RETURN_IF_ERROR(
@@ -543,9 +512,9 @@ SampleCalibrationPoses::ExecuteWithRandomEngine(const ExecuteRequest& request,
     INTR_ASSIGN_OR_RETURN(
         sampled_waypoints,
         SampleRandomWaypoints(
-            base_t_flange_initial, world, arm_part_info.object,
-            params.calibration_type(), robot, calibration_object, camera,
-            flange, sampling_strategy_params.num_samples(), sample_box_halfsize,
+            base_t_flange_initial, world, params.calibration_type(), robot,
+            calibration_object, camera, flange,
+            sampling_strategy_params.num_samples(), sample_box_halfsize,
             sampling_strategy_params.rotation_randomization_angle_degrees(),
             sampling_strategy_params
                 .rotation_randomization_roll_angle_degrees(),

@@ -363,11 +363,9 @@ cc_library(
         "//intrinsic/util/status:status_macros",
         "//intrinsic/util/thread",
         "//intrinsic_control/intrinsic/icon/cc_client:client",
-        "//intrinsic_control/intrinsic/icon/equipment:channel_factory",
-        "//intrinsic_control/intrinsic/icon/equipment:equipment_utils",
+        "//intrinsic_control/intrinsic/icon/equipment:resolved_dependency_utils",
         "//intrinsic_control/intrinsic/icon/proto:cart_space_conversion",
         "//intrinsic_control/intrinsic/icon/proto:eigen_conversion",
-        "//intrinsic_control/intrinsic/icon/skills/util:position_part_util",
         "//intrinsic_control/intrinsic/icon/utils:arm_utils",
         "//intrinsic_kinematics/intrinsic/kinematics/types:cartesian_limits",
         "//intrinsic_motion_planning/intrinsic/motion_planning/proto/v1:motion_specification_cc_proto",
@@ -379,9 +377,7 @@ cc_library(
         "//intrinsic_sdk/intrinsic/math:proto_conversion",
         "//intrinsic_sdk/intrinsic/math:units",
         "//intrinsic_sdk/intrinsic/motion_planning:motion_planner_client",
-        "//intrinsic_sdk/intrinsic/skills/cc:equipment_pack",
         "//intrinsic_sdk/intrinsic/skills/cc:skill_interface",
-        "//intrinsic_sdk/intrinsic/skills/cc:skill_utils",
         "//intrinsic_sdk/intrinsic/util/thread:sysinfo",
         "//intrinsic_sdk/intrinsic/world/objects:frame",
         "//intrinsic_sdk/intrinsic/world/objects:kinematic_object",
@@ -404,7 +400,6 @@ cc_library(
         "@intrinsic_apis//intrinsic/motion_planning/proto/v1:geometric_constraints_cc_proto",
         "@intrinsic_apis//intrinsic/motion_planning/proto/v1:motion_planning_error_cc_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:camera_setup_cc_proto",
-        "@intrinsic_apis//intrinsic/resources/proto:resource_handle_cc_proto",
         "@intrinsic_apis//intrinsic/skills/proto:footprint_cc_proto",
         "@intrinsic_apis//intrinsic/world/proto:collision_settings_cc_proto",
     ],
@@ -416,6 +411,7 @@ proto_library(
     deps = [
         "@intrinsic_apis//intrinsic/assets/proto:field_metadata_proto",
         "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_proto",
+        "@intrinsic_apis//intrinsic/icon/proto/v1:field_metadata_proto",
         "@intrinsic_apis//intrinsic/motion_planning/proto/v1:geometric_constraints_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:camera_setup_proto",
         "@intrinsic_apis//intrinsic/skills/proto:skills_proto",
@@ -440,6 +436,7 @@ go_proto_library(
     deps = [
         "@intrinsic_apis//intrinsic/assets/proto:field_metadata_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_go_proto",
+        "@intrinsic_apis//intrinsic/icon/proto/v1:field_metadata_go_proto",
         "@intrinsic_apis//intrinsic/motion_planning/proto/v1:geometric_constraints_go_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:camera_setup_go_proto",
         "@intrinsic_apis//intrinsic/skills/proto:skills_go_proto",
@@ -450,7 +447,6 @@ go_proto_library(
 skill_manifest(
     name = "sample_calibration_poses_manifest",
     src = "sample_calibration_poses_manifest.textproto",
-    incompatible_disallow_manifest_dependencies = False,
     deps = [":sample_calibration_poses_proto"],
 )
 
