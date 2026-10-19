@@ -25,7 +25,7 @@ cc_library(
     deps = [
         "//intrinsic/simulation/gazebo/components:digital_io_components",
         "//intrinsic/simulation/gazebo/components:ppr_component",
-        "//intrinsic/util/status:status_conversion_grpc",
+        "//intrinsic_sdk/intrinsic/util/status:status_conversion_grpc",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
@@ -45,7 +45,7 @@ cc_library(
     srcs = ["sim_inputs_service_singleton.cc"],
     hdrs = ["sim_inputs_service_singleton.h"],
     deps = [
-        "//intrinsic/util/status:status_conversion_grpc",
+        "//intrinsic_sdk/intrinsic/util/status:status_conversion_grpc",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

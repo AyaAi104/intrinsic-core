@@ -68,9 +68,3 @@ cc_library(
         "@io_opentelemetry_cpp//api",
     ],
 )
-
-alias(
-    name = "topic_config",
-    actual = "//intrinsic_sdk/intrinsic/platform/pubsub:topic_config",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
