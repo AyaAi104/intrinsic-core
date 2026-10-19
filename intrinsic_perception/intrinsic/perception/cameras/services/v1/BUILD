@@ -170,8 +170,10 @@ cc_library(
         "//intrinsic_control/intrinsic/icon/release/portable:init_intrinsic",
         "//intrinsic_perception/intrinsic/perception/cameras:camera",
         "//intrinsic_perception/intrinsic/perception/proto_conversion/v1:camera_config",
+        "//intrinsic_sdk/intrinsic/assets/dependencies:utils_cc",
         "//intrinsic_sdk/intrinsic/connect/cc/grpc:channel",
         "//intrinsic_sdk/intrinsic/logging:data_logger_client",
+        "//intrinsic_sdk/intrinsic/logging/proto:logger_service_cc_grpc",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
@@ -200,7 +202,6 @@ cc_oci_image(
     cmd = [
         "/intrinsic_perception/intrinsic/perception/cameras/services/v1/camera_server",
         "--opencensus_tracing=true",
-        "--data_logger_grpc_service_address=logger.app-intrinsic-base.svc.cluster.local:8080",
     ],
     data_path = "/",
 )
@@ -219,7 +220,6 @@ cc_oci_image(
     cmd = [
         "/intrinsic_perception/intrinsic/perception/cameras/services/v1/ros_camera_server",
         "--opencensus_tracing=true",
-        "--data_logger_grpc_service_address=logger.app-intrinsic-base.svc.cluster.local:8080",
     ],
     data_path = "/",
     workdir = ros_camera_service_workdir(package_relative_label(":ros_camera_server")),

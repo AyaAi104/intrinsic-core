@@ -444,6 +444,8 @@ proto_library(
         ":camera_identifier_proto",
         ":camera_settings_proto",
         ":sensor_config_proto",
+        "@intrinsic_apis//intrinsic/assets/proto:field_metadata_proto",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_proto",
     ],
 )
 
@@ -460,6 +462,8 @@ go_proto_library(
         ":camera_identifier_go_proto",
         ":camera_settings_go_proto",
         ":sensor_config_go_proto",
+        "@intrinsic_apis//intrinsic/assets/proto:field_metadata_go_proto",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_go_proto",
     ],
 )
 
