@@ -23,7 +23,7 @@ go_library(
     srcs = ["app_util.go"],
     importpath = "intrinsic/tools/inctl/cmd/apputil",
     deps = [
-        "//intrinsic/tools/inctl/auth",
+        "//intrinsic_sdk/intrinsic/tools/inctl/auth",
         "@com_github_golang_glog//:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@org_golang_google_grpc//metadata:go_default_library",
@@ -52,8 +52,8 @@ go_library(
     importpath = "intrinsic/tools/inctl/cmd/lint",
     deps = [
         "//intrinsic/tools/inctl/util:resolve",
-        "//intrinsic/util/go:set",
-        "//intrinsic/util/path_resolver:pathresolver",
+        "//intrinsic_sdk/intrinsic/util/go:set",
+        "//intrinsic_sdk/intrinsic/util/path_resolver:pathresolver",
         "@cat_dario_mergo//:go_default_library",
         "@com_github_googlecloudrobotics_core//src/go/pkg/apis/apps/v1alpha1:go_default_library",
         "@com_github_pkg_errors//:go_default_library",

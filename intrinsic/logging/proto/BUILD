@@ -21,12 +21,6 @@ alias(
 )
 
 alias(
-    name = "log_item_proto",
-    actual = "//intrinsic_sdk/intrinsic/logging/proto:log_item_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "log_item_cc_proto",
     actual = "//intrinsic_sdk/intrinsic/logging/proto:log_item_cc_proto",
     tags = ["go/intrinsic-ioc-transition-tdd"],

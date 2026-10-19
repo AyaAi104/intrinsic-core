@@ -163,12 +163,6 @@ alias(
 )
 
 alias(
-    name = "executive_events_proto",
-    actual = "//intrinsic_sdk/intrinsic/executive/proto:executive_events_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "behavior_tree_proto",
     actual = "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_proto",
     tags = ["go/intrinsic-ioc-transition-tdd"],

@@ -39,7 +39,7 @@ go_library(
     srcs = ["resolve.go"],
     importpath = "intrinsic/tools/inctl/util/resolve",
     deps = [
-        "//intrinsic/util/path_resolver:pathresolver",
+        "//intrinsic_sdk/intrinsic/util/path_resolver:pathresolver",
         "@com_github_pkg_errors//:go_default_library",
     ],
 )
@@ -55,8 +55,8 @@ go_library(
     srcs = ["gcpauth.go"],
     importpath = "intrinsic/tools/inctl/util/gcpauth",
     deps = [
-        "//intrinsic/config:environments",
-        "//intrinsic/tools/inctl/auth",
+        "//intrinsic_sdk/intrinsic/config:environments",
+        "//intrinsic_sdk/intrinsic/tools/inctl/auth",
         "@com_github_golang_glog//:go_default_library",
         "@com_github_google_go_containerregistry//pkg/v1/google:go_default_library",
         "@com_github_google_go_containerregistry//pkg/v1/remote:go_default_library",
