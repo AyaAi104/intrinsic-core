@@ -21,6 +21,7 @@ import (
 	"maps"
 	"path"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"intrinsic/assets/conversion/solutionconversion"
@@ -106,6 +107,11 @@ var (
 	}
 )
 
+type deploymentState struct {
+	appDeploymentID string
+	isIdle          bool
+}
+
 // The DeployService can deploy applications on the cluster.
 type DeployService struct {
 	conductorClient               conductorgrpcpb.ConductorServiceClient
@@ -127,6 +133,7 @@ type DeployService struct {
 	clusterInfo         transfersvc.ClusterInfo
 	clusterParams       render.ClusterParams
 	initDataFiles       render.InitDataFilesParams
+	deploymentState     atomic.Pointer[deploymentState]
 }
 
 // Options contains options for a deploy service.
@@ -181,20 +188,31 @@ func New(opts Options) *DeployService {
 	}
 }
 
+func (s *DeployService) setDeploymentState(appDeploymentID string, isIdle bool) {
+	s.deploymentState.Store(&deploymentState{
+		appDeploymentID: appDeploymentID,
+		isIdle:          isIdle,
+	})
+}
+
 // StartIdleWorkcellSpec applies the default workcell spec to the cluster in order to cache container images.
 func (s *DeployService) StartIdleWorkcellSpec(ctx context.Context) error {
 	ctx, span := trace.StartSpan(ctx, "StartIdleWorkcellSpec")
 	defer span.End()
 
-	// Only start the idle workcell spec if there isn't a workcell spec already
-	// installed. This avoids unnecessarily updating an existing solution
+	// Only start the idle workcell spec if there isn't a solution already
+	// running. This avoids unnecessarily updating an existing solution
 	// deployment with defaults.
 	if ca, err := s.transferService.CurrentExclusiveChart(ctx); err != nil {
 		return fmt.Errorf("failed to get current exclusive chart: %w", err)
-	} else if running, err := transfersvc.IsSolutionRunning(ca); err != nil {
+	} else if running, appID, err := transfersvc.IsSolutionRunning(ca); err != nil {
 		return fmt.Errorf("failed to check running state of exclusive chart: %w", err)
 	} else if running {
 		log.InfoContextf(ctx, "Solution deployment already exists, skipping StartIdleWorkcellSpec")
+		if appID == "" {
+			appID = newAppDeploymentID()
+		}
+		s.setDeploymentState(appID, false)
 		return nil
 	}
 
@@ -227,6 +245,8 @@ func (s *DeployService) applyIdleWorkcellSpec(ctx context.Context) error {
 		log.ErrorContextf(ctx, "s.transferService.ApplyWorkcellSpec(ws=%v) failed: %v", ws, err)
 		return fmt.Errorf("failed to apply the workcell spec: %w", err)
 	}
+	s.setDeploymentState("", true)
+
 	return nil
 }
 
@@ -503,6 +523,9 @@ type deployValidator func(ctx context.Context, app *apb.Application, rts map[str
 type deployOpts struct {
 	// validate is a callback to run validation during solution deployment.
 	validate deployValidator
+	// appDeploymentID is the app_deployment_id to use for the deployment.
+	// If empty, a new app_deployment_id is generated.
+	appDeploymentID string
 }
 
 func (s *DeployService) deployApplication(
@@ -587,7 +610,10 @@ func (s *DeployService) deployApplication(
 		log.ErrorContextf(ctx, "render.IsSimulated failed: %v", err)
 		return nil, status.Errorf(codes.Internal, "render workcell spec: %v", err)
 	}
-	appDeploymentID := newAppDeploymentID()
+	appDeploymentID := opts.appDeploymentID
+	if appDeploymentID == "" {
+		appDeploymentID = newAppDeploymentID()
+	}
 	ws, err := render.WorkcellSpecFromApplication(&render.ApplicationParams{
 		DefaultWorkcellSpec:     defaultWorkcellSpec,
 		ResourceInstances:       app.GetResources().GetResourceInstances(),
@@ -657,6 +683,7 @@ func (s *DeployService) deployApplication(
 		log.ErrorContextf(ctx, "s.transferService.ApplyWorkcellSpec(ws=%v) failed: %v", ws, err)
 		return nil, status.Errorf(codes.Internal, "failed to create and apply workcell spec: %v", err)
 	}
+	s.setDeploymentState(appDeploymentID, false)
 
 	log.InfoContextf(ctx, "DeployApplication done")
 	sd, err := solutionconversion.AsSolutionDeployment(app, rts)
@@ -1058,6 +1085,7 @@ func (s *DeployService) UpdateSolutionDeployment(ctx context.Context, req *solut
 
 	if err := s.runner.Schedule(ctx, op, func(ctx context.Context) (proto.Message, error) {
 		var solutionDeploymentID string
+		var appDeploymentID string
 		var appRunning bool
 		// Right now we only use the response here to get the solution
 		// deployment id.  We could potentially use more of the response,
@@ -1074,6 +1102,9 @@ func (s *DeployService) UpdateSolutionDeployment(ctx context.Context, req *solut
 		} else {
 			appRunning = true
 			solutionDeploymentID = currApp.GetApplication().GetMetadata().GetSolutionDeploymentId()
+			if st := s.deploymentState.Load(); st != nil && !st.isIdle {
+				appDeploymentID = st.appDeploymentID
+			}
 		}
 		if reqName := req.GetSolutionDeployment().GetName(); reqName != "" && reqName != solutionDeploymentID {
 			if !appRunning {
@@ -1117,7 +1148,8 @@ func (s *DeployService) UpdateSolutionDeployment(ctx context.Context, req *solut
 			return nil
 		}
 		solutionDeployment, err := s.deployApplication(ctx, app, nil, nil, deployOpts{
-			validate: validateDependencies,
+			validate:        validateDependencies,
+			appDeploymentID: appDeploymentID,
 		})
 		if err != nil {
 			return nil, err
