@@ -56,6 +56,49 @@ def _non_module_deps_impl(
         url = "https://github.com/CGAL/cgal/archive/refs/tags/v6.2.1.tar.gz",
     )
 
+    http_archive(
+        name = "foundation_pose_inference_library",
+        build_file = Label("//intrinsic/production/external:foundation_pose_inference_library.BUILD.bazel"),
+        sha256 = "de217d2c4e1f2526f3d156c69c20bcc11afaca961a11b844703a86f4f79b21ae",
+        strip_prefix = "foundation-pose-inference-library-32d1122bf819b4db5b6d823aaa4092e27a562091",
+        urls = ["https://github.com/intrinsic-opensource/foundation-pose-inference-library/archive/32d1122bf819b4db5b6d823aaa4092e27a562091.tar.gz"],
+    )
+
+    http_archive(
+        name = "foundationpose_perception_pipeline",
+        build_file = Label("//intrinsic/production/external:foundationpose_perception_pipeline.BUILD.bazel"),
+        sha256 = "bfac90173ecd7578117043b6883398cc7ce24610924b35231ee7bb025c8d201a",
+        strip_prefix = "foundationpose_perception_pipeline-4d79cf040a981d9375f1e8c8b0d71306b968ed67",
+        urls = ["https://github.com/intrinsic-opensource/foundationpose_perception_pipeline/archive/4d79cf040a981d9375f1e8c8b0d71306b968ed67.tar.gz"],
+    )
+
+    http_file(
+        name = "foundationpose_refine_onnx",
+        downloaded_file_path = "refiner_net.onnx",
+        sha256 = "4a4445d2506b1bfc0a8d62fa80f8780a7e37bb0df13bb09aa5dd04a03bf0c954",
+        urls = [
+            "https://api.ngc.nvidia.com/v2/models/nvidia/tao/foundationpose/versions/deployable_v1.0/files/refiner_net.onnx",
+            "https://huggingface.co/nvidia/foundationpose/resolve/18d8309afc9790cddc03a1d50bc69954dc058693/refiner_net.onnx",
+        ],
+    )
+
+    http_file(
+        name = "foundationpose_score_onnx",
+        downloaded_file_path = "score_net.onnx",
+        sha256 = "bb7208919557560ecb0e10a30612821f0025a2578190b17677bdf3653514a48d",
+        urls = [
+            "https://api.ngc.nvidia.com/v2/models/nvidia/tao/foundationpose/versions/deployable_v1.0/files/score_net.onnx",
+            "https://huggingface.co/nvidia/foundationpose/resolve/18d8309afc9790cddc03a1d50bc69954dc058693/score_net.onnx",
+        ],
+    )
+
+    http_file(
+        name = "foundationstereo_onnx",
+        downloaded_file_path = "deployable_foundation_stereo_s_dynamic_v2.0.onnx",
+        sha256 = "a001a7bc0512a0bc3b3218194e924784e58b20656c6f1ea2c151024e555cfd64",
+        urls = ["https://api.ngc.nvidia.com/v2/models/nvidia/tao/foundationstereo/versions/deployable_foundation_stereo_s_dynamic_v2.0/files/deployable_foundation_stereo_s_dynamic_v2.0.onnx"],
+    )
+
     # For ur_calibration.[cc/h]
     http_archive(
         name = "ur_calibration",

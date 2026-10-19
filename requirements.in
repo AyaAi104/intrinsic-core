@@ -68,6 +68,8 @@ cadexchanger==3.20.0.17379
 cryptography==45.0.7
 chex==0.1.89
 clu==0.0.12
+cuda-bindings==13.2.0
+cuda-pathfinder==1.8.1
 deepeval==4.0.5
 db-dtypes==1.4.3
 dm-tree==0.1.9
@@ -77,6 +79,7 @@ firestore-mock==0.1.5
 flask==3.1.1
 flax==0.10.6
 fire==0.7.0
+ftfy==6.3.1
 gevent==25.9.1
 glfw==2.10.2
 google-adk[a2a, eval]==2.3.0
@@ -189,6 +192,7 @@ tensorflow-datasets==4.9.9
 tensorflow-io-gcs-filesystem==0.37.1
 tensorflow-probability==0.25.0
 tensorflow-serving-api==2.20.0
+tensorrt-cu13-bindings==10.16.1.11
 tenacity==9.1.4
 tf-models-official==2.20.0
 timeout-decorator==0.5.0

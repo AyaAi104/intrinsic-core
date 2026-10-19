@@ -635,11 +635,19 @@ archive_override(
     url = "https://github.com/FilipposSot/Universal_Robots_Client_Library/archive/refs/tags/2.7.0-alpha-acceleration.0.tar.gz",
 )
 
+bazel_dep(name = "libpng", version = "1.6.54")
+bazel_dep(name = "tensorrt_headers", version = "10.16")
+
 use_repo(
     non_module_deps,
     "cgal",
     "coal",
     "firestore_emulator",
+    "foundation_pose_inference_library",  
+    "foundationpose_perception_pipeline",  
+    "foundationpose_refine_onnx",  
+    "foundationpose_score_onnx",  
+    "foundationstereo_onnx",  
     "kubebuilder_test_tools",
     "kubernetes_json_schema",
     "sysroot_glvnd_stubs",
@@ -694,6 +702,13 @@ oci.pull(
     image = "us-central1-docker.pkg.dev/intrinsic-mirror/intrinsic-mirror-dockerhub/tensorflow/serving",
     platforms = ["linux/amd64"],
     tag = "2.21.0-gpu",  # tag needs to be specified for renovatebot to sync the digest
+)
+oci.pull(
+    name = "tensorrt",
+    digest = "sha256:94aa793e6db548940168186172b5acbe413cae9e56f7a656d171cd0dd9b6a869",
+    image = "nvcr.io/nvidia/tensorrt",
+    platforms = ["linux/amd64"],
+    tag = "26.05-py3",
 )
 oci.pull(
     name = "terraform_base",
@@ -844,6 +859,8 @@ use_repo(
     "tensorflow-gpu_linux_amd64",  
     "tensorflow_serving",  
     "tensorflow_serving_linux_amd64",  
+    "tensorrt",  
+    "tensorrt_linux_amd64",  
     "terraform_base",  
     "terraform_base_linux_amd64",  
     "timescaledb",  
