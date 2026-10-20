@@ -511,6 +511,7 @@ bazel_dep(name = "daqp", version = "0.10.3")
 bazel_dep(name = "dumb-init", version = "1.2.5")
 bazel_dep(name = "egl-registry", version = "0.0.0-20250527", repo_name = "egl_registry")  
 bazel_dep(name = "eigen", version = "5.0.1.bcr.2", repo_name = "com_gitlab_libeigen_eigen")
+
 # TODO(b/489481888): Remove once grpc upgrades its transitive envoy_api
 # dependency past 0.0.0-20251216-6ef568c (pulled in by grpc 1.81.1 in #58249),
 # which still imports the removed com_google_googleapis_imports repo from
@@ -538,7 +539,7 @@ archive_override(
 
 
 bazel_dep(name = "google_benchmark", version = "1.9.5", repo_name = "com_google_benchmark")
-bazel_dep(name = "google_cloud_cpp", version = "3.0.0-rc1")
+bazel_dep(name = "google_cloud_cpp", version = "3.7.0")
 bazel_dep(name = "googleapis-cc", version = "1.1.5")
 bazel_dep(name = "googleapis-go", version = "1.1.5")
 bazel_dep(name = "googleapis-grpc-cc", version = "1.1.5")
@@ -581,7 +582,7 @@ bazel_dep(name = "opencensus-cpp", version = "0.0.0-20230502-50eb5de.bcr.3", rep
 bazel_dep(name = "opencv", version = "4.12.0.bcr.5")  
 bazel_dep(name = "opengl-registry", version = "0.0.0-20250707", repo_name = "opengl_registry")  
 bazel_dep(name = "openmesh", version = "11.0")  
-bazel_dep(name = "opentelemetry-cpp", version = "1.19.0", repo_name = "io_opentelemetry_cpp")  
+bazel_dep(name = "opentelemetry-cpp", version = "1.24.0", repo_name = "io_opentelemetry_cpp")  
 bazel_dep(name = "opentelemetry-proto", version = "1.8.0", repo_name = "opentelemetry_proto")  
 bazel_dep(name = "openusd", version = "25.11.bcr.3")
 bazel_dep(name = "or-tools", version = "9.15", repo_name = "or_tools")
@@ -600,6 +601,7 @@ bazel_dep(name = "qhull", version = "8.0.2.bcr.2")
 bazel_dep(name = "re2", version = "2025-11-05.bcr.1", repo_name = "com_googlesource_code_re2")
 bazel_dep(name = "riegeli", version = "0.0.0-20250822-9f2744d", repo_name = "com_google_riegeli")
 bazel_dep(name = "roboticslibrary.rl", version = "0.0.0-20250723-5bbd773.bcr.4")  
+
 # TODO(b/489481888): Remove once grpc upgrades its transitive rules_apple
 # dependency from 3.16.0 to >= 4.x (grpc 1.81.1 in #58249 pulls in
 # rules_apple 3.16.0, which is incompatible with rules_swift 3.1.2 from
