@@ -62,6 +62,17 @@ go_deps_dev.gazelle_override(
     path = "github.com/googlecloudrobotics/core",
 )
 
+# kythe.io ships Bazel BUILD files for its own workspace and checked-in .pb.go files:
+# generate BUILD.bazel files (which take precedence) from the Go sources instead.
+go_deps_dev.gazelle_override(
+    build_file_generation = "on",
+    directives = [
+        "gazelle:build_file_name BUILD.bazel",
+        "gazelle:proto disable",
+    ],
+    path = "kythe.io",
+)
+
 # This can be updated with buildozer
 # https://github.com/bazelbuild/buildtools/blob/master/buildozer/README.md
 use_repo(
@@ -150,6 +161,7 @@ use_repo(
     "com_github_stripe_stripe_go_v74",  
     "com_github_stripe_stripe_go_v79",  
     "com_github_tdewolff_parse",  
+    "com_github_tidwall_jsonc",
     "com_github_toqueteos_webbrowser",  
     "com_github_traviswt_gke_auth_plugin",  
     "com_github_yannh_kubeconform",  
@@ -183,6 +195,7 @@ use_repo(
     "io_k8s_sigs_controller_tools",  
     "io_k8s_sigs_structured_merge_diff_v6",  
     "io_k8s_sigs_yaml",  
+    "io_kythe",
     "io_opencensus_go",
     "io_opentelemetry_go_contrib_detectors_gcp",
     "io_opentelemetry_go_contrib_instrumentation_google_golang_org_grpc_otelgrpc",
