@@ -64,6 +64,7 @@ cc_library(
         "//intrinsic_sdk/intrinsic/geometry/api:io",
         "//intrinsic_sdk/intrinsic/geometry/api:renderable",
         "//intrinsic_sdk/intrinsic/geometry/api:renderable_generation",
+        "//intrinsic_sdk/intrinsic/geometry/internal/util:gltf_helpers",
         "//intrinsic_sdk/intrinsic/geometry/internal/util:gltf_merge",
         "//intrinsic_sdk/intrinsic/geometry/storage:geometry_library",
         "//intrinsic_sdk/intrinsic/math:pose3",

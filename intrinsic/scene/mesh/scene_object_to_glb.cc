@@ -15,7 +15,6 @@
 #include "intrinsic/scene/mesh/scene_object_to_glb.h"
 
 #include <memory>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -31,6 +30,7 @@
 #include "intrinsic/geometry/api/io.h"
 #include "intrinsic/geometry/api/renderable.h"
 #include "intrinsic/geometry/api/renderable_generation.h"
+#include "intrinsic/geometry/internal/util/gltf_helpers.h"
 #include "intrinsic/geometry/internal/util/gltf_merge.h"
 #include "intrinsic/geometry/proto/v1/geometry.pb.h"
 #include "intrinsic/geometry/proto/v1/transformed_geometry.pb.h"
@@ -61,7 +61,9 @@ using ::intrinsic::geo::GenerateRenderableWithMaterialOverrides;
 using ::intrinsic::geo::GetPoseAndScale;
 using ::intrinsic::geo::MergeGltfResources;
 using ::intrinsic::geo::MergeGltfResourcesResult;
+using ::intrinsic::geo::ParseGlb;
 using ::intrinsic::geo::Renderable;
+using ::intrinsic::geo::SerializeGltfToGlb;
 using ::intrinsic::geo::ToGeometry;
 using ::intrinsic_proto::FromProtoNormalized;
 using ::intrinsic_proto::geometry::v1::TransformedGeometry;
@@ -106,23 +108,6 @@ absl::StatusOr<Pose3d> ResolveEntityLocalPose(
   }
 
   return parent_t_this;
-}
-
-// Parses a binary GLB byte buffer from memory into a tinygltf::Model.
-absl::StatusOr<tinygltf::Model> LoadGlbFromMemory(absl::string_view glb_bytes) {
-  tinygltf::TinyGLTF loader;
-  tinygltf::Model sub_model;
-  std::string err;
-  std::string warn;
-  const bool loaded = loader.LoadBinaryFromMemory(
-      &sub_model, &err, &warn,
-      reinterpret_cast<const unsigned char*>(glb_bytes.data()),
-      glb_bytes.size());
-  if (!loaded) {
-    return absl::InternalError(
-        absl::StrCat("Failed to parse geometry GLB: ", err));
-  }
-  return sub_model;
 }
 
 // Creates a glTF node for every entity in `so`, resolves its local pose, wires
@@ -189,8 +174,7 @@ absl::Status AttachGeometryNode(absl::string_view geom_name,
     return absl::InternalError(absl::StrCat(
         "Renderable has empty GLB string for geometry: ", geom_name));
   }
-  INTR_ASSIGN_OR_RETURN(tinygltf::Model sub_model,
-                        LoadGlbFromMemory(glb_bytes));
+  INTR_ASSIGN_OR_RETURN(tinygltf::Model sub_model, ParseGlb(glb_bytes));
   const MergeGltfResourcesResult merge_result =
       MergeGltfResources(sub_model, main_model);
 
@@ -257,17 +241,9 @@ absl::StatusOr<tinygltf::Model> SceneObjectToGltf(
 
 absl::StatusOr<std::string> SceneObjectToGlb(const SceneObject& so,
                                              const GeometryLibrary& geo_lib) {
-  INTR_ASSIGN_OR_RETURN(tinygltf::Model model, SceneObjectToGltf(so, geo_lib));
-
-  std::ostringstream ss;
-  tinygltf::TinyGLTF gltf_writer;
-  const bool write_status = gltf_writer.WriteGltfSceneToStream(
-      &model, ss, /*prettyPrint=*/false, /*writeBinary=*/true);
-  if (!write_status) {
-    return absl::InternalError(
-        "Failed to serialize glTF model to binary GLB stream");
-  }
-  return ss.str();
+  INTR_ASSIGN_OR_RETURN(const tinygltf::Model model,
+                        SceneObjectToGltf(so, geo_lib));
+  return SerializeGltfToGlb(model);
 }
 
 }  // namespace intrinsic::scene_object
