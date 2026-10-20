@@ -137,6 +137,7 @@ cc_library(
         "//intrinsic/resources/proto:geometric_resource_data_cc_proto",
         "//intrinsic/resources/proto:resource_instance_cc_proto",
         "//intrinsic/skills:footprint_util",
+        "//intrinsic/stats:metrics_utils",
         "//intrinsic/stats:scoped_span",
         "//intrinsic/util:aggregate_type",
         "//intrinsic/util:eigen",
@@ -206,7 +207,7 @@ cc_library(
         "@intrinsic_apis//intrinsic/scene/proto/v1:entity_cc_proto",
         "@intrinsic_apis//intrinsic/skills/proto:footprint_cc_proto",
         "@intrinsic_apis//intrinsic/world/proto:object_world_refs_cc_proto",
-        "@io_opencensus_cpp//opencensus/stats",
+        "@io_opentelemetry_cpp//api",
         "@or_tools//ortools/base:strong_int",
     ],
 )

@@ -71,6 +71,7 @@
 #include "intrinsic/scene/proto/v1/entity.pb.h"
 #include "intrinsic/skills/footprint_util.h"
 #include "intrinsic/skills/proto/footprint.pb.h"
+#include "intrinsic/stats/metrics_utils.h"
 #include "intrinsic/stats/scoped_span.h"
 #include "intrinsic/util/aggregate_type.h"
 #include "intrinsic/util/eigen.h"
@@ -124,8 +125,7 @@
 #include "intrinsic/world/update_world.h"
 #include "intrinsic/world/util/compose_world_util.h"
 #include "intrinsic/world/world.h"
-#include "opencensus/stats/measure.h"
-#include "opencensus/stats/stats.h"
+#include "opentelemetry/metrics/sync_instruments.h"
 #include "re2/re2.h"
 
 ABSL_FLAG(bool, enable_on_change_pubsub, true,
@@ -1664,24 +1664,29 @@ constexpr absl::string_view kRemainingEntitiesAfterResourceExtractionName =
     "intrinsic/object_world_service/"
     "remaining_entities_after_resource_extraction";
 
-opencensus::stats::MeasureInt64 RemainingEntitiesAfterResourceExtraction() {
-  static const auto measure = opencensus::stats::MeasureInt64::Register(
-      kRemainingEntitiesAfterResourceExtractionName,
-      "Count of entities remaining in the world after resource extraction.",
-      "1");
-  return measure;
+// Instruments in this file are intentionally released so they remain alive
+// for the program's lifetime, avoiding global destructor ordering errors on
+// service destruction. Each is a one-time allocation, so this doesn't leak.
+opentelemetry::metrics::Counter<uint64_t>&
+RemainingEntitiesAfterResourceExtraction() {
+  static opentelemetry::metrics::Counter<uint64_t>* counter =
+      stats::GetMeter()
+          ->CreateUInt64Counter(
+              kRemainingEntitiesAfterResourceExtractionName,
+              "Count of entities remaining in the world after resource "
+              "extraction.",
+              "1")
+          .release();
+  return *counter;
 }
 
-void RegisterMetricsViews() {
+void RegisterMetrics() {
   static absl::once_flag called;
   absl::call_once(called, []() {
-    RemainingEntitiesAfterResourceExtraction();
-    opencensus::stats::ViewDescriptor()
-        .set_name(kRemainingEntitiesAfterResourceExtractionName)
-        .set_measure(kRemainingEntitiesAfterResourceExtractionName)
-        .set_aggregation(opencensus::stats::Aggregation::Count())
-        .RegisterForExport();
-    RegisterObjectWorldUpdatesMetricsViews();
+    // Eagerly initialize the instruments to register them. The counter only
+    // records counts > 0, so add 0 to export its time series from the start.
+    RemainingEntitiesAfterResourceExtraction().Add(0);
+    RegisterObjectWorldUpdatesMetrics();
   });
 }
 
@@ -1746,7 +1751,7 @@ ObjectWorldService::ObjectWorldService(
         make_geo_lib)
     : world_storage_future_(std::move(world_storage)),
       make_geo_lib_(std::move(make_geo_lib)) {
-  RegisterMetricsViews();
+  RegisterMetrics();
 }
 
 WorldStorage& ObjectWorldService::WorldStore() {
@@ -3157,8 +3162,9 @@ grpc::Status ObjectWorldService::ExtractResourceInstances(
     remaining_entity_count++;
   }
 
-  opencensus::stats::Record(
-      {{RemainingEntitiesAfterResourceExtraction(), remaining_entity_count}});
+  if (remaining_entity_count > 0) {
+    RemainingEntitiesAfterResourceExtraction().Add(remaining_entity_count);
+  }
 
   return grpc::Status::OK;
 }

@@ -137,7 +137,8 @@ std::unique_ptr<grpc::Server> CreateAndStartServerOrDie(
 int main(int argc, char** argv) {
   InitIntrinsic(argv[0], argc, argv);
   std::fesetround(FE_TOWARDZERO);
-  intrinsic::OpenCensusPlugin open_census;
+  intrinsic::OpenCensusPlugin open_census(/*service_name=*/"world_service",
+                                          /*use_otel_metrics=*/true);
 
   const int32_t world_port = absl::GetFlag(FLAGS_port);
   // Address the world services listen on.
