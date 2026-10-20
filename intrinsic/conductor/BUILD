@@ -20,18 +20,47 @@ package(default_visibility = [
 ])
 
 cc_library(
+    name = "world",
+    srcs = ["world.cc"],
+    hdrs = ["world.h"],
+    deps = [
+        "//intrinsic/assets/proto/v1alpha1:asset_info_internal_cc_grpc",
+        "//intrinsic/assets/proto/v1alpha1:asset_info_internal_cc_proto",
+        "//intrinsic/conductor/proto:wrapper_bridge_cc_proto",
+        "//intrinsic/resources/proto:geometric_resource_data_cc_proto",
+        "//intrinsic_sdk/intrinsic/util/status:status_conversion_grpc",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
+        "//intrinsic_sdk/intrinsic/world/proto:object_world_service_cc_grpc_proto",
+        "//intrinsic_sdk/intrinsic/world/proto:object_world_service_cc_proto",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_googleapis//google/rpc:status_cc_proto",
+        "@com_google_protobuf//:protobuf",
+        "@intrinsic_apis//intrinsic/util/status:status_cc_proto",
+    ],
+)
+
+cc_library(
     name = "save_scene_monitor",
     srcs = ["save_scene_monitor.cc"],
     hdrs = ["save_scene_monitor.h"],
     deps = [
-        ":resource_world_interface",
+        ":world",
+        "//intrinsic/assets/proto/v1alpha1:asset_info_internal_cc_grpc",
         "//intrinsic/conductor/proto:save_status_cc_proto",
         "//intrinsic/storage/hot_shared_state/proto/v1:resource_set_service_cc_grpc_proto",
         "//intrinsic_sdk/intrinsic/platform/pubsub",
         "//intrinsic_sdk/intrinsic/util:proto_time",
         "//intrinsic_sdk/intrinsic/util/status:status_conversion_grpc",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "//intrinsic_sdk/intrinsic/world/proto:object_world_service_cc_grpc_proto",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/synchronization",
@@ -48,7 +77,9 @@ cc_library(
         ":execution_context",
         ":resource_world_wrapper_headers",
         ":save_scene_monitor",
+        ":world",
         "//intrinsic/assets/proto/v1alpha1:asset_info_internal_cc_grpc",
+        "//intrinsic/conductor/proto:wrapper_bridge_cc_proto",
         "//intrinsic/kubernetes/acl/cc:client_context",
         "//intrinsic/longrunning/cc:operation_scheduler",
         "//intrinsic/scene/config:scene_object_config_updater",
@@ -64,6 +95,7 @@ cc_library(
         "//intrinsic_sdk/intrinsic/util/status:get_extended_status",
         "//intrinsic_sdk/intrinsic/util/status:status_builder",
         "//intrinsic_sdk/intrinsic/util/status:status_conversion_rpc",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "//intrinsic_sdk/intrinsic/util/status:status_macros_grpc",
         "//intrinsic_sdk/intrinsic/util/thread",
         "//intrinsic_sdk/intrinsic/util/thread:stop_token",
@@ -105,11 +137,9 @@ go_binary(
         "@com_github_golang_glog//:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@intrinsic_apis//intrinsic/config/proto:operation_mode_go_proto",
-        "@intrinsic_apis//intrinsic/util/status:status_go_proto",
         "@io_opencensus_go//plugin/ocgrpc:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//credentials/insecure:go_default_library",
-        "@org_golang_google_grpc//status:go_default_library",
         "@org_golang_google_protobuf//proto",
         "@org_golang_google_protobuf//types/known/timestamppb",
     ],
@@ -127,21 +157,10 @@ cc_library(
 )
 
 cc_library(
-    name = "resource_world_interface",
-    hdrs = ["resource_world_interface.h"],
-    deps = [
-        "//intrinsic/conductor/proto:wrapper_bridge_cc_proto",
-        "@abseil-cpp//absl/status:statusor",
-    ],
-)
-
-cc_library(
     name = "resource_world_wrapper_headers",
     hdrs = ["resource_world_wrapper.h"],
     deps = [
         ":resource_reader_interface",
-        ":resource_world_interface",
-        "//intrinsic/conductor/proto:wrapper_bridge_cc_proto",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
     ],
@@ -155,6 +174,7 @@ cc_library(
     deps = [
         ":resource_world_wrapper_c",
         ":resource_world_wrapper_headers",
+        "//intrinsic/conductor/proto:wrapper_bridge_cc_proto",
         "//intrinsic/util/cgo:cpp_types",
         "//intrinsic_sdk/intrinsic/conductor/proto:conductor_cc_proto",
         "//intrinsic_sdk/intrinsic/util/status:status_macros",

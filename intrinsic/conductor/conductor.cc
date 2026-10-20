@@ -31,6 +31,7 @@
 #include "absl/time/time.h"
 #include "intrinsic/assets/proto/v1alpha1/asset_info_internal.pb.h"
 #include "intrinsic/assets/scene_objects/proto/scene_object_manifest.pb.h"
+#include "intrinsic/conductor/world.h"
 #include "intrinsic/connect/cc/grpc/channel.h"
 #include "intrinsic/executive/proto/run_metadata.pb.h"
 #include "intrinsic/kubernetes/acl/cc/client_context.h"
@@ -180,9 +181,11 @@ ExtendedStatus MakeEditWorldStatus(
   return *GetExtendedStatus(status);
 }
 
-// Creates or updates init_world from solution document.
 absl::StatusOr<internal::UpdateWorldFromResourceSetResult> CreateInitWorld(
-    const ExecutionContext& ec, const ResourceWorld& resource_world,
+    const ExecutionContext& ec,
+    intrinsic_proto::assets::v1alpha1::AssetInfoInternal::StubInterface&
+        asset_info_internal,
+    intrinsic_proto::world::ObjectWorldService::Service& world_service,
     bool skip_invalid_world_updates) {
   // Creates world with retries to account for transient errors, e.g., related
   // to downloading (or uploading) geos from CAS. Technically, we can introspect
@@ -202,10 +205,11 @@ absl::StatusOr<internal::UpdateWorldFromResourceSetResult> CreateInitWorld(
       absl::SleepFor(kRetryInitialWorldInterval);
     }
 
-    INTR_ASSIGN_OR_RETURN(update_result,
-                          resource_world.UpdateWorldFromResourceSet(
-                              world_id, skip_invalid_world_updates),
-                          _ << "could not load resource set into edit world");
+    INTR_ASSIGN_OR_RETURN(
+        update_result,
+        CreateOrUpdateWorld(world_id, asset_info_internal, world_service,
+                            skip_invalid_world_updates),
+        _ << "could not load resource set into world " << world_id);
 
     if (update_result.skipped_updates_size() == 0 &&
         update_result.skipped_scene_objects_size() == 0) {
@@ -388,8 +392,8 @@ grpc::Status ConductorImpl::CreateWorldsFromSolution(
   // Seeds the initial world from the solution document.
   INTR_ASSIGN_OR_RETURN_GRPC(
       UpdateWorldFromResourceSetResult update_result,
-      CreateInitWorld(*execution_context_, *resource_world_,
-                      skip_invalid_world_updates));
+      CreateInitWorld(*execution_context_, *asset_info_internal_stub_,
+                      world_service_, skip_invalid_world_updates));
 
   // Pause the world updater before we clone into the belief world.
   INTR_RETURN_IF_ERROR_GRPC(PauseWorldUpdater())
@@ -1208,8 +1212,9 @@ grpc::Status ConductorImpl::SaveWorld(grpc::ServerContext* context,
 
   // We should assume that the resource set now reflects the saved world, so
   // we'll simply compose the world into the passed world ID.
-  auto update_result =
-      resource_world_->UpdateWorldFromResourceSet(request->id(), false);
+  auto update_result = CreateOrUpdateWorld(
+      request->id(), *asset_info_internal_stub_, world_service_,
+      /*skip_invalid_world_updates=*/false);
   if (!update_result.ok()) {
     LOG(WARNING)
         << "SaveWorld: could not reload world from resource set (should have "
@@ -1269,8 +1274,10 @@ grpc::Status ConductorImpl::RestoreWorld(grpc::ServerContext* context,
   // complaints about not restorable saves.
   // Holds `mu_` during the composition so that the edit world cannot change
   // concurrently, e.g., by StartSolution.
-  auto update_result =
-      resource_world_->UpdateWorldFromResourceSet(request->id(), false);
+  absl::StatusOr<UpdateWorldFromResourceSetResult> update_result =
+      CreateOrUpdateWorld(request->id(), *asset_info_internal_stub_,
+                          world_service_,
+                          /*skip_invalid_world_updates=*/false);
   if (!update_result.ok()) {
     const std::string error_msg =
         absl::StrCat("could not load resource set into world with id ",
@@ -1286,6 +1293,11 @@ grpc::Status ConductorImpl::RestoreWorld(grpc::ServerContext* context,
 
 absl::StatusOr<std::unique_ptr<ConductorImpl>> ConductorImpl::Create(
     const SrvParams& params, KVStoreCreator create_kv_store) {
+  if (params.asset_info_internal_service_address.empty()) {
+    return absl::InvalidArgumentError(
+        "asset_info_internal_service_address is required");
+  }
+
   auto sim_channel = grpc::CreateCustomChannel(
       params.sim_service_address, grpc::InsecureChannelCredentials(),
       intrinsic::connect::DefaultGrpcChannelArgs());
@@ -1312,17 +1324,17 @@ absl::StatusOr<std::unique_ptr<ConductorImpl>> ConductorImpl::Create(
   auto asset_instances_stub =
       intrinsic_proto::assets::v1::AssetInstances::NewStub(ais_channel);
 
+  // The geometric resource set data contains all scene objects and world
+  // updates of the solution, which can exceed the default gRPC message size
+  // limit.
   std::unique_ptr<
       intrinsic_proto::assets::v1alpha1::AssetInfoInternal::StubInterface>
-      asset_info_internal_stub;
-  if (!params.asset_info_internal_service_address.empty()) {
-    auto aii_channel =
-        grpc::CreateChannel(params.asset_info_internal_service_address,
-                            grpc::InsecureChannelCredentials());
-    asset_info_internal_stub =
-        intrinsic_proto::assets::v1alpha1::AssetInfoInternal::NewStub(
-            aii_channel);
-  }
+      asset_info_internal_stub =
+          intrinsic_proto::assets::v1alpha1::AssetInfoInternal::NewStub(
+              grpc::CreateCustomChannel(
+                  params.asset_info_internal_service_address,
+                  grpc::InsecureChannelCredentials(),
+                  intrinsic::connect::UnlimitedMessageSizeGrpcChannelArgs()));
 
   // Create KVStore
   std::shared_ptr<intrinsic::KeyValueStore> kv_store;
@@ -1388,16 +1400,15 @@ absl::StatusOr<std::unique_ptr<ConductorImpl>> ConductorImpl::Create(
       SaveSceneMonitor::Create(
           std::string(kInitWorldId),
           SaveSceneMonitorOptions{
-              .resource_world = resource_world.get(),
+              .asset_info_internal = asset_info_internal_stub.get(),
+              .world_service = &params.world_service,
               .hss_address = params.hss_service_address,
-              .ows_address = params.object_world_service_address,
           }),
       _ << "savemonitor.Create");
 
   return std::make_unique<ConductorImpl>(ConductorOptions{
       .kv_store = std::move(kv_store),
       .resource_world = std::move(resource_world),
-      .save_scene_monitor = std::move(save_scene_monitor),
       .execution_context = std::move(execution_context),
       .world_service = params.world_service,
       .world_updater = params.world_updater,
@@ -1409,6 +1420,7 @@ absl::StatusOr<std::unique_ptr<ConductorImpl>> ConductorImpl::Create(
       .installed_assets_stub = std::move(installed_assets_stub),
       .asset_info_internal_stub = std::move(asset_info_internal_stub),
       .enable_sim_pause = params.enable_sim_pause,
+      .save_scene_monitor = std::move(save_scene_monitor),
   });
 }
 

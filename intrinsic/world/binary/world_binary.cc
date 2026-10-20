@@ -341,8 +341,13 @@ int main(int argc, char** argv) {
   QCHECK_OK(intrinsic::RegisterSignalHandlerAndWait(
       conductor_server.get(), shutdown_params, handlers_registered));
 
-  // The conductor server is shut down, so the world server is drained next.
-  LOG(INFO) << "Conductor server stopped, shutting down the World Server.";
+  // Destroys the conductor (including any polling threads) before shutting down
+  // the world server since it directly calls world C++ APIs.
+  conductor_server.reset();
+  conductor.reset();
+
+  // The conductor is shut down, so the world server is drained next.
+  LOG(INFO) << "Conductor stopped, shutting down the World Server.";
   world_server->Shutdown(absl::Now() + shutdown_params.shutdown_timeout);
   world_server->Wait();
 
