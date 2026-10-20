@@ -63,12 +63,6 @@ alias(
 )
 
 alias(
-    name = "annotate",
-    actual = "//intrinsic_sdk/intrinsic/util/status:annotate",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "status_builder_grpc",
     actual = "//intrinsic_sdk/intrinsic/util/status:status_builder_grpc",
     tags = ["go/intrinsic-ioc-transition-tdd"],

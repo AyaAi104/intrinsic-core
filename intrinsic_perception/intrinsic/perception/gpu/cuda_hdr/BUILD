@@ -24,7 +24,6 @@ cc_library(
     hdrs = ["hdr_mertens.h"],
     deps = [
         ":hdr_mertens_weight_map",
-        "//intrinsic/util/status:status_macros",
         "//intrinsic_perception/intrinsic/perception/core:dimensions",
         "//intrinsic_perception/intrinsic/perception/core:image",
         "//intrinsic_perception/intrinsic/perception/core:image_traits",
@@ -33,6 +32,7 @@ cc_library(
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_image_proc:pyramid",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_utils",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_utils:cuda_image_utils",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
     ],
@@ -43,7 +43,6 @@ cuda_library(
     srcs = ["hdr_mertens_weight_map.cu.cc"],
     hdrs = ["hdr_mertens_weight_map.h"],
     deps = [
-        "//intrinsic/util/status:status_macros",
         "//intrinsic_perception/intrinsic/perception/core:dimensions",
         "//intrinsic_perception/intrinsic/perception/core:image_traits",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_image_proc:border_extrapolation",
@@ -51,6 +50,7 @@ cuda_library(
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_image_proc:laplacian_device",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_image_proc:smooth_device",
         "//intrinsic_perception/intrinsic/perception/gpu/cuda_utils",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@cuda//:cuda_headers",

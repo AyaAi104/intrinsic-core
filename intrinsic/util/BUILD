@@ -71,12 +71,6 @@ cc_library(
 )
 
 alias(
-    name = "decorators",
-    actual = "//intrinsic_sdk/intrinsic/util:decorators",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "eigen",
     actual = "//intrinsic_sdk/intrinsic/util:eigen",
     tags = ["go/intrinsic-ioc-transition-tdd"],
@@ -110,12 +104,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-alias(
-    name = "cloud",
-    actual = "//intrinsic_sdk/intrinsic/util:cloud",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 cc_library(
     name = "testcallback",
     srcs = ["testcallback.cc"],
@@ -143,11 +131,5 @@ alias(
 alias(
     name = "flag",
     actual = "//intrinsic_sdk/intrinsic/util:flag",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "version",
-    actual = "//intrinsic_sdk/intrinsic/util:version",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )

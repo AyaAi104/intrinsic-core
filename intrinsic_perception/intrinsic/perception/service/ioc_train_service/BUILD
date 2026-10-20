@@ -25,7 +25,6 @@ py_library(
     name = "ioc_train_service_lib",
     srcs = ["service/ioc_train_service.py"],
     deps = [
-        "//intrinsic/util/proto:descriptors_py",
         "//intrinsic_perception/intrinsic/perception/service/ioc_train_service/proto:ioc_pose_estimator_params_py_pb2",
         "//intrinsic_perception/intrinsic/perception/service/ioc_train_service/proto:ioc_train_service_config_py_pb2",
         "//intrinsic_sdk/intrinsic/assets:interface_utils_py",
@@ -33,6 +32,7 @@ py_library(
         "//intrinsic_sdk/intrinsic/assets/proto:installed_assets_pb2_grpc",
         "//intrinsic_sdk/intrinsic/assets/proto:installed_assets_py_pb2",
         "//intrinsic_sdk/intrinsic/math/python:ros_proto_conversion",
+        "//intrinsic_sdk/intrinsic/util/proto:descriptors_py",
         "@ai_intrinsic_sdks_pip_deps//numpy",
         "@com_github_grpc_grpc//src/python/grpcio/grpc:grpcio",
         "@com_google_googleapis//google/longrunning:operations_py_proto",

@@ -23,12 +23,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-alias(
-    name = "any",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:any",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 cc_library(
     name = "compile_utils",
     srcs = ["compile_utils.cc"],
@@ -67,12 +61,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-alias(
-    name = "descriptors_py",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:descriptors_py",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 cc_library(
     name = "pb_hash",
     hdrs = ["pb_hash.h"],
@@ -92,12 +80,6 @@ alias(
 alias(
     name = "type_url",
     actual = "//intrinsic_sdk/intrinsic/util/proto:type_url",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "error_collector",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:error_collector",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 

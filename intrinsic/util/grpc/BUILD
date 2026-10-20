@@ -19,32 +19,8 @@ package(
 )
 
 alias(
-    name = "channel_interface",
-    actual = "//intrinsic_sdk/intrinsic/util/grpc:channel_interface",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "channel",
     actual = "//intrinsic_sdk/intrinsic/util/grpc:channel",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "connection_params",
-    actual = "//intrinsic_sdk/intrinsic/util/grpc:connection_params",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "connection_cache",
-    actual = "//intrinsic_sdk/intrinsic/util/grpc:connection_cache",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "connection",
-    actual = "//intrinsic_sdk/intrinsic/util/grpc:connection",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
@@ -53,18 +29,6 @@ alias(
     actual = "//intrinsic_sdk/intrinsic/util/grpc",
     tags = ["go/intrinsic-ioc-transition-tdd"],
     visibility = ["//intrinsic:public_api_users"],
-)
-
-alias(
-    name = "interceptor",
-    actual = "//intrinsic_sdk/intrinsic/util/grpc:interceptor",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "error_handling",
-    actual = "//intrinsic_sdk/intrinsic/util/grpc:error_handling",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
 alias(

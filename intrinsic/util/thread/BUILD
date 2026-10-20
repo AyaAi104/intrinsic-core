@@ -16,12 +16,6 @@ load("//bazel:cc_macros.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-alias(
-    name = "thread",
-    actual = "//intrinsic_sdk/intrinsic/util/thread",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 # --------------------------------------------------------------------------------------------------
 # The targets below are not exported to the SDK.
 # --------------------------------------------------------------------------------------------------

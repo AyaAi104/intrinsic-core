@@ -33,12 +33,6 @@ alias(
 )
 
 alias(
-    name = "geometry_service_py_pb2_grpc",
-    actual = "//intrinsic_sdk/intrinsic/geometry/proto:geometry_service_py_pb2_grpc",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "geometry_service_go_proto",
     actual = "//intrinsic_sdk/intrinsic/geometry/proto:geometry_service_go_proto",
     tags = ["go/intrinsic-ioc-transition-tdd"],

@@ -26,12 +26,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-alias(
-    name = "conductor_cc_grpc",
-    actual = "//intrinsic_sdk/intrinsic/conductor/proto:conductor_cc_grpc",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 proto_library(
     name = "execution_context_proto",
     srcs = ["execution_context.proto"],

@@ -21,11 +21,11 @@ cc_library(
     srcs = ["capture_result_storage.cc"],
     hdrs = ["capture_result_storage.h"],
     deps = [
-        "//intrinsic/util/status:status_macros",
         "//intrinsic_perception/intrinsic/perception/cameras:capture_result",
         "//intrinsic_perception/intrinsic/perception/proto_conversion/v1:capture_result",
         "//intrinsic_sdk/intrinsic/platform/pubsub",
         "//intrinsic_sdk/intrinsic/platform/pubsub:kvstore",
+        "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "//intrinsic_sdk/intrinsic/util/time:deadline_timeout",
         "@abseil-cpp//absl/functional:any_invocable",
         "@abseil-cpp//absl/status:statusor",

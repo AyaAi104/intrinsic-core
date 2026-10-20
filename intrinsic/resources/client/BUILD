@@ -15,12 +15,6 @@
 package(default_visibility = ["//visibility:public"])
 
 alias(
-    name = "resource_registry_client",
-    actual = "//intrinsic_sdk/intrinsic/resources/client:resource_registry_client",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "resource_registry_client_interface",
     actual = "//intrinsic_sdk/intrinsic/resources/client:resource_registry_client_interface",
     tags = ["go/intrinsic-ioc-transition-tdd"],
