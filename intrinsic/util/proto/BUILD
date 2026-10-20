@@ -73,12 +73,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-alias(
-    name = "get_text_proto",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:get_text_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 cc_library(
     name = "pb_hash",
     hdrs = ["pb_hash.h"],

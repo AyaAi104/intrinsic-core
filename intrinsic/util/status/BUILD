@@ -87,12 +87,6 @@ alias(
 )
 
 alias(
-    name = "get_extended_status",
-    actual = "//intrinsic_sdk/intrinsic/util/status:get_extended_status",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "status_specs",
     actual = "//intrinsic_sdk/intrinsic/util/status:status_specs",
     tags = ["go/intrinsic-ioc-transition-tdd"],

@@ -19,12 +19,6 @@ package(
 )
 
 alias(
-    name = "hash",
-    actual = "//intrinsic_sdk/intrinsic/util:hash",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "aggregate_type",
     actual = "//intrinsic_sdk/intrinsic/util:aggregate_type",
     tags = ["go/intrinsic-ioc-transition-tdd"],
@@ -57,12 +51,6 @@ cc_library(
         "@com_google_protobuf//:protobuf",
         "@or_tools//ortools/base:file",
     ],
-)
-
-alias(
-    name = "fixed_vector",
-    actual = "//intrinsic_sdk/intrinsic/util:fixed_vector",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
 alias(
@@ -108,12 +96,6 @@ cc_library(
     name = "full_precision",
     hdrs = ["full_precision.h"],
     deps = ["@abseil-cpp//absl/strings:str_format"],
-)
-
-alias(
-    name = "lru_cache",
-    actual = "//intrinsic_sdk/intrinsic/util:lru_cache",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
 alias(
