@@ -35,6 +35,7 @@
 #include "absl/time/time.h"
 #include "grpcpp/client_context.h"
 #include "grpcpp/support/client_callback.h"
+#include "intrinsic/assets/proto/v1/resolved_dependency.pb.h"
 #include "intrinsic/connect/cc/grpc/channel.h"
 #include "intrinsic/perception/cameras/camera_config.h"
 #include "intrinsic/perception/cameras/camera_identifier.h"
@@ -205,6 +206,8 @@ class ConcurrentCamera {
 struct ActiveCameraConfig {
   CameraIdentifier identifier;
   CameraConfig config;
+  std::optional<intrinsic_proto::assets::v1::ResolvedDependency>
+      intrinsic_runtime;
 
   static absl::StatusOr<ActiveCameraConfig> FromProto(
       const intrinsic_proto::perception::v1::CameraConfig& camera_config_proto);

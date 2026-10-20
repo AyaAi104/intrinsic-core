@@ -35,6 +35,7 @@
 #include "grpcpp/support/client_callback.h"
 #include "grpcpp/support/time.h"
 #include "intrinsic/assets/interface_utils.h"
+#include "intrinsic/assets/proto/v1/resolved_dependency.pb.h"
 #include "intrinsic/perception/cameras/camera_factory.h"
 #include "intrinsic/perception/cameras/camera_identifier.h"
 #include "intrinsic/perception/cameras/camera_lister.h"
@@ -235,15 +236,26 @@ absl::StatusOr<ActiveCameraConfig> ActiveCameraConfig::FromProto(
   INTR_ASSIGN_OR_RETURN(
       (auto [camera_config, camera_id]),
       intrinsic_proto::perception::v1::FromProto(camera_config_proto));
+  std::optional<intrinsic_proto::assets::v1::ResolvedDependency>
+      intrinsic_runtime;
+  if (camera_config_proto.has_intrinsic_runtime()) {
+    intrinsic_runtime = camera_config_proto.intrinsic_runtime();
+  }
   return ActiveCameraConfig{
       .identifier = std::move(camera_id),
       .config = std::move(camera_config),
+      .intrinsic_runtime = std::move(intrinsic_runtime),
   };
 }
 
 intrinsic_proto::perception::v1::CameraConfig ActiveCameraConfig::ToProto()
     const {
-  return intrinsic_proto::perception::v1::ToProto(config, identifier);
+  intrinsic_proto::perception::v1::CameraConfig proto =
+      intrinsic_proto::perception::v1::ToProto(config, identifier);
+  if (intrinsic_runtime.has_value()) {
+    *proto.mutable_intrinsic_runtime() = *intrinsic_runtime;
+  }
+  return proto;
 }
 
 CameraManager::CameraManager(const ActiveCameraConfig& active_camera)
@@ -315,7 +327,7 @@ void CameraManager::SetActiveCamera(const ActiveCameraConfig& active_camera) {
   absl::ReleasableMutexLock lock(mutex_);
   if (active_camera_config_.has_value() &&
       active_camera_config_->identifier == active_camera.identifier) {
-    active_camera_config_->config = active_camera.config;
+    *active_camera_config_ = active_camera;
     return;
   }
   std::shared_ptr<ConcurrentCamera> old_active_camera =

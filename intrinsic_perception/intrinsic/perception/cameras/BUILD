@@ -56,6 +56,7 @@ cc_library(
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/time",
         "@com_github_grpc_grpc//:grpc++",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_cc_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:camera_config_cc_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:camera_config_service_cc_grpc",
         "@intrinsic_apis//intrinsic/perception/proto/v1:camera_service_cc_grpc",
