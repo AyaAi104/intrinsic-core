@@ -466,11 +466,11 @@ absl::Status ReserializeGeometryComponent(GeometryComponent* geo_component,
     INTR_ASSIGN_OR_RETURN(
         auto geo_set, geo_component->GetGeometry(name, geo_lib.Deserializer()));
     NamedGeometryProtoSet geo_proto_set;
-    for (const auto& [name, geo] : geo_set) {
-      INTR_ASSIGN_OR_RETURN(geo_proto_set[name],
+    for (const auto& [sub_name, geo] : geo_set) {
+      INTR_ASSIGN_OR_RETURN(geo_proto_set[sub_name],
                             ToProto(geo, &geo_lib.Serializer()));
     }
-    geo_component->SetGeometry(name, geo_proto_set);
+    geo_component->SetGeometry(name, std::move(geo_proto_set));
 
     // Make sure it remains deserialized.
     INTR_RETURN_IF_ERROR(
@@ -610,18 +610,8 @@ absl::Status WorldObject::ApplyGeometryOptionOverrides(
         geometry_component->ApplyGeometryOptionOverrides(options));
 
     // TODO: b/469159066 -- Reserialize so we can write them out again.
-    for (const auto& name : geometry_component->GetGeometryNames()) {
-      INTR_ASSIGN_OR_RETURN(
-          NamedGeometrySet geos,
-          geometry_component->GetGeometry(name, geolib.Deserializer()));
-      // Reserialize so that we can write them out again.
-      NamedGeometryProtoSet geo_protos;
-      for (const auto& [name, geo] : geos) {
-        INTR_ASSIGN_OR_RETURN(geo_protos[name],
-                              ToProto(geo, &geolib.Serializer()));
-      }
-      geometry_component->SetGeometry(name, geo_protos);
-    }
+    INTR_RETURN_IF_ERROR(
+        ReserializeGeometryComponent(geometry_component, geolib));
   }
 
   return absl::OkStatus();
