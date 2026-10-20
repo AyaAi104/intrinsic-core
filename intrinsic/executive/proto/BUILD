@@ -156,16 +156,10 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-alias(
-    name = "behavior_tree_proto",
-    actual = "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
 proto_library(
     name = "process_tree_proto",
     srcs = ["process_tree.proto"],
-    deps = [":behavior_tree_proto"],
+    deps = ["@intrinsic_apis//intrinsic/executive/proto:behavior_tree_proto"],
 )
 
 # process_tree

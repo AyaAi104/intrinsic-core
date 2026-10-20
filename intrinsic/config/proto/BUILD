@@ -105,7 +105,7 @@ proto_library(
     name = "process_proto",
     srcs = ["process.proto"],
     deps = [
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_proto",
     ],
 )
 
@@ -134,7 +134,7 @@ go_proto_library(
     importpath = "intrinsic/config/proto/process_go_proto",
     protos = [":process_proto"],
     deps = [
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_go_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_go_proto",
     ],
 )
 

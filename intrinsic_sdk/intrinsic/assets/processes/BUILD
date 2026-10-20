@@ -54,8 +54,8 @@ go_library(
     importpath = "intrinsic/assets/processes/processmanifest",
     deps = [
         "//intrinsic_sdk/intrinsic/assets:idutils",
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto:metadata_go_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_go_proto",
         "@intrinsic_apis//intrinsic/skills/proto:skills_go_proto",
     ],
 )
@@ -70,10 +70,10 @@ go_library(
         "//intrinsic_sdk/intrinsic/assets/errors:report",
         "//intrinsic_sdk/intrinsic/assets/processes/proto:process_asset_go_proto",
         "//intrinsic_sdk/intrinsic/assets/processes/proto:process_manifest_go_proto",
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto:asset_type_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto:documentation_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto:id_go_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_go_proto",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
     ],

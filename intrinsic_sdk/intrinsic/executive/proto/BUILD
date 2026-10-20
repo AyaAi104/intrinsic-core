@@ -22,45 +22,11 @@ load("//intrinsic_sdk/intrinsic/util/proto/build_defs:descriptor_set.bzl", "prot
 
 package(default_visibility = ["//intrinsic:public_api_users"])
 
-# behavior_call
-proto_library(
-    name = "behavior_call_proto",
-    srcs = ["behavior_call.proto"],
-    deps = [
-        "@com_google_googleapis//google/api:annotations_proto",
-        "@com_google_googleapis//google/api:field_behavior_proto",
-        "@com_google_protobuf//:any_proto",
-        "@com_google_protobuf//:duration_proto",
-        "@intrinsic_apis//intrinsic/skills/proto:footprint_proto",
-    ],
-)
-
-py_proto_library(
-    name = "behavior_call_py_pb2",
-    deps = [":behavior_call_proto"],
-)
-
-cc_proto_library(
-    name = "behavior_call_cc_proto",
-    deps = [":behavior_call_proto"],
-)
-
-go_proto_library(
-    name = "behavior_call_go_proto",
-    importpath = "intrinsic/executive/proto/behavior_call_go_proto",
-    protos = [":behavior_call_proto"],
-    deps = [
-        "@intrinsic_apis//intrinsic/skills/proto:footprint_go_proto",
-        "@org_golang_google_genproto_googleapis_api//annotations",
-    ],
-)
-
 # executive_service
 proto_library(
     name = "executive_service_proto",
     srcs = ["executive_service.proto"],
     deps = [
-        ":behavior_tree_proto",
         ":run_metadata_proto",
         "@com_google_googleapis//google/api:annotations_proto",
         "@com_google_googleapis//google/longrunning:operations_proto",
@@ -68,6 +34,7 @@ proto_library(
         "@com_google_protobuf//:empty_proto",
         "@com_google_protobuf//:field_mask_proto",
         "@intrinsic_apis//intrinsic/assets/proto:id_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_proto",
         "@intrinsic_apis//intrinsic/executive/proto:executive_execution_mode_proto",
         "@intrinsic_apis//intrinsic/kubernetes/generator/proto:auth_options_proto",
     ],
@@ -107,10 +74,10 @@ go_proto_library(
     importpath = "intrinsic/executive/proto/executive_service_go_proto",
     protos = [":executive_service_proto"],
     deps = [
-        ":behavior_tree_go_proto",
         ":run_metadata_go_proto",
         "@com_google_cloud_go_longrunning//autogen/longrunningpb",
         "@intrinsic_apis//intrinsic/assets/proto:id_go_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_go_proto",
         "@intrinsic_apis//intrinsic/executive/proto:executive_execution_mode_go_proto",
         "@intrinsic_apis//intrinsic/kubernetes/generator/proto:auth_options_go_proto",
         "@org_golang_google_genproto_googleapis_api//annotations",
@@ -125,9 +92,9 @@ proto_library(
     name = "run_metadata_proto",
     srcs = ["run_metadata.proto"],
     deps = [
-        ":behavior_tree_proto",
         "@com_google_protobuf//:duration_proto",
         "@com_google_protobuf//:timestamp_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_proto",
         "@intrinsic_apis//intrinsic/executive/proto:executive_execution_mode_proto",
         "@intrinsic_apis//intrinsic/logging/proto:context_proto",
         "@intrinsic_apis//intrinsic/util/status:extended_status_proto",
@@ -149,7 +116,7 @@ go_proto_library(
     importpath = "intrinsic/executive/proto/run_metadata_go_proto",
     protos = [":run_metadata_proto"],
     deps = [
-        ":behavior_tree_go_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_go_proto",
         "@intrinsic_apis//intrinsic/executive/proto:executive_execution_mode_go_proto",
         "@intrinsic_apis//intrinsic/logging/proto:context_go_proto",
         "@intrinsic_apis//intrinsic/util/status:extended_status_go_proto",
@@ -160,11 +127,11 @@ proto_library(
     name = "executive_events_proto",
     srcs = ["executive_events.proto"],
     deps = [
-        ":behavior_tree_proto",
         ":run_metadata_proto",
         "@com_google_googleapis//google/rpc:status_proto",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:timestamp_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_proto",
         "@intrinsic_apis//intrinsic/executive/proto:executive_execution_mode_proto",
     ],
 )
@@ -184,56 +151,12 @@ go_proto_library(
     importpath = "intrinsic/executive/proto/executive_events_go_proto",
     protos = [":executive_events_proto"],
     deps = [
-        ":behavior_tree_go_proto",
         ":run_metadata_go_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_go_proto",
         "@intrinsic_apis//intrinsic/executive/proto:executive_execution_mode_go_proto",
         "@org_golang_google_genproto_googleapis_rpc//status",
         "@org_golang_google_protobuf//types/known/anypb",
         "@org_golang_google_protobuf//types/known/timestamppb",
-    ],
-)
-
-# behavior tree
-proto_library(
-    name = "behavior_tree_proto",
-    srcs = ["behavior_tree.proto"],
-    deps = [
-        ":behavior_call_proto",
-        "@com_google_cel_spec//proto/cel/expr:syntax_proto",
-        "@com_google_googleapis//google/api:annotations_proto",
-        "@com_google_googleapis//google/api:field_behavior_proto",
-        "@com_google_protobuf//:any_proto",
-        "@intrinsic_apis//intrinsic/executive/proto:any_list_proto",
-        "@intrinsic_apis//intrinsic/executive/proto:any_with_assignments_proto",
-        "@intrinsic_apis//intrinsic/executive/proto:code_execution_proto",
-        "@intrinsic_apis//intrinsic/skills/proto:skills_proto",
-        "@intrinsic_apis//intrinsic/util/status:extended_status_proto",
-    ],
-)
-
-cc_proto_library(
-    name = "behavior_tree_cc_proto",
-    deps = [":behavior_tree_proto"],
-)
-
-py_proto_library(
-    name = "behavior_tree_py_pb2",
-    deps = [":behavior_tree_proto"],
-)
-
-go_proto_library(
-    name = "behavior_tree_go_proto",
-    importpath = "intrinsic/executive/proto/behavior_tree_go_proto",
-    protos = [":behavior_tree_proto"],
-    deps = [
-        ":behavior_call_go_proto",
-        "@com_google_cel_spec//:expr",
-        "@intrinsic_apis//intrinsic/executive/proto:any_list_go_proto",
-        "@intrinsic_apis//intrinsic/executive/proto:any_with_assignments_go_proto",
-        "@intrinsic_apis//intrinsic/executive/proto:code_execution_go_proto",
-        "@intrinsic_apis//intrinsic/skills/proto:skills_go_proto",
-        "@intrinsic_apis//intrinsic/util/status:extended_status_go_proto",
-        "@org_golang_google_genproto_googleapis_api//annotations",
     ],
 )
 

@@ -27,7 +27,6 @@ py_library(
         "//intrinsic_sdk/intrinsic/assets/install:installed_assets_client",
         "//intrinsic_sdk/intrinsic/assets/processes/proto:process_asset_py_pb2",
         "//intrinsic_sdk/intrinsic/assets/proto:installed_assets_py_pb2",
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_py_pb2",
         "//intrinsic_sdk/intrinsic/frontend/solution_service/proto:solution_service_py_pb2",
         "//intrinsic_sdk/intrinsic/frontend/solution_service/proto:solution_service_py_pb2_grpc",
         "//intrinsic_sdk/intrinsic/solutions:behavior_tree",
@@ -38,6 +37,7 @@ py_library(
         "@intrinsic_apis//intrinsic/assets/proto:asset_type_py_pb2",
         "@intrinsic_apis//intrinsic/assets/proto:metadata_py_pb2",
         "@intrinsic_apis//intrinsic/assets/proto:view_py_pb2",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_py_pb2",
     ],
 )
 
@@ -49,13 +49,13 @@ py_library(
         "//intrinsic_sdk/intrinsic/assets/install:installed_assets_client",
         "//intrinsic_sdk/intrinsic/assets/processes/proto:process_asset_py_pb2",
         "//intrinsic_sdk/intrinsic/assets/proto:installed_assets_py_pb2",
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_py_pb2",
         "//intrinsic_sdk/intrinsic/executive/py:behavior_tree_visitor",
         "//intrinsic_sdk/intrinsic/solutions:behavior_tree",
         "@com_github_grpc_grpc//src/python/grpcio/grpc:grpcio",
         "@intrinsic_apis//intrinsic/assets/proto:asset_type_py_pb2",
         "@intrinsic_apis//intrinsic/assets/proto:view_py_pb2",
         "@intrinsic_apis//intrinsic/assets/proto/v1:reference_py_pb2",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_py_pb2",
     ],
 )
 
@@ -63,8 +63,8 @@ py_library(
     name = "actions",
     srcs = ["actions.py"],
     deps = [
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_call_py_pb2",
         "//intrinsic_sdk/intrinsic/solutions:blackboard_value",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_call_py_pb2",
     ],
 )
 
@@ -159,7 +159,6 @@ py_library(
         ":skill_utils",
         "//intrinsic_sdk/intrinsic/assets:id_utils_py",
         "//intrinsic_sdk/intrinsic/assets/configuration:asset_configuration_client",
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_call_py_pb2",
         "//intrinsic_sdk/intrinsic/solutions:blackboard_value",
         "//intrinsic_sdk/intrinsic/solutions:cel",
         "//intrinsic_sdk/intrinsic/solutions:provided",
@@ -167,6 +166,7 @@ py_library(
         "@com_github_grpc_grpc//src/python/grpcio/grpc:grpcio",
         "@com_google_protobuf//:protobuf_python",
         "@intrinsic_apis//intrinsic/assets/proto:id_py_pb2",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_call_py_pb2",
         "@intrinsic_apis//intrinsic/skills/proto:equipment_py_pb2",
     ],
 )

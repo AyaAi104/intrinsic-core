@@ -24,9 +24,9 @@ cc_library(
         "behavior_tree_visitor.inc",
     ],
     deps = [
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_cc_proto",
         "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_cc_proto",
     ],
 )

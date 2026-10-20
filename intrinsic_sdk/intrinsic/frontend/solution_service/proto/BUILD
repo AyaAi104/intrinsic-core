@@ -26,10 +26,10 @@ proto_library(
     srcs = ["solution_service.proto"],
     deps = [
         ":sequence_list_proto",
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_proto",
         "@com_google_googleapis//google/api:annotations_proto",
         "@com_google_protobuf//:empty_proto",
         "@com_google_protobuf//:timestamp_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_proto",
         "@intrinsic_apis//intrinsic/frontend/solution_service/proto:status_proto",
         "@intrinsic_apis//intrinsic/kubernetes/generator/proto:auth_options_proto",
     ],
@@ -70,7 +70,7 @@ go_proto_library(
     protos = [":solution_service_proto"],
     deps = [
         ":sequence_list_go_proto",
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_go_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_go_proto",
         "@intrinsic_apis//intrinsic/frontend/solution_service/proto:status_go_proto",
         "@intrinsic_apis//intrinsic/kubernetes/generator/proto:auth_options_go_proto",
         "@org_golang_google_genproto_googleapis_api//annotations",
@@ -83,8 +83,8 @@ proto_library(
     name = "sequence_list_proto",
     srcs = ["sequence_list.proto"],
     deps = [
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_proto",
         "@com_google_protobuf//:timestamp_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_proto",
     ],
 )
 
@@ -103,7 +103,7 @@ go_proto_library(
     importpath = "intrinsic/frontend/solution_service/proto/sequence_list_go_proto",
     protos = [":sequence_list_proto"],
     deps = [
-        "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_go_proto",
+        "@intrinsic_apis//intrinsic/executive/proto:behavior_tree_go_proto",
         "@org_golang_google_protobuf//types/known/timestamppb",
     ],
 )
