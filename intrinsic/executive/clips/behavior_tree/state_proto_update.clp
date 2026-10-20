@@ -211,7 +211,9 @@
   (run-metadata-proto-update-field ?path ?state ?op)
 
   (modify ?tree (run-metadata-proto-state ?state))
-  (operation-events-add-tree-state-change-event ?op ?tree-id ?state)
+
+  (operation-events-add-tree-state-change-event
+    ?op ?state ?run-metadata-proto-path)
 )
 
 (defrule behavior-tree-state-proto-update-node
@@ -254,8 +256,9 @@
 
   (modify ?node (run-metadata-proto-state ?state)
                 (run-metadata-proto-recovered-state ?run-metadata-proto-recovered-state))
-  (operation-events-add-node-state-change-event ?op ?tree-id ?node-id
-                                                ?s-state ?was-recovered)
+
+  (operation-events-add-node-state-change-event ?op ?s-state ?was-recovered
+                                                ?run-metadata-proto-path)
 )
 
 (defrule behavior-tree-state-proto-update-condition
@@ -295,7 +298,7 @@
   (if (neq ?task-state ?previous-task-state) then
     (run-metadata-proto-update-field ?path ?task-state ?op)
     (operation-events-add-task-node-state-change-event
-      ?op ?tree-id ?node-id ?task-state)
+      ?op ?task-state ?run-metadata-proto-path)
   )
 )
 
@@ -321,7 +324,7 @@
   (if (neq ?task-state ?previous-task-state) then
     (run-metadata-proto-update-field ?path ?task-state ?op)
     (operation-events-add-task-node-state-change-event
-      ?op ?tree-id ?node-id ?task-state)
+      ?op ?task-state ?run-metadata-proto-path)
   )
 )
 
@@ -348,11 +351,9 @@
   (if (neq ?task-state ?previous-task-state) then
     (run-metadata-proto-update-field ?path ?task-state ?op)
     (operation-events-add-task-node-state-change-event
-      ?op ?tree-id ?node-id ?task-state)
+      ?op ?task-state ?run-metadata-proto-path)
   )
-
 )
-
 
 (defrule behavior-tree-state-proto-update-task-node-code-execution-response-stdout
   (declare (salience ?*SALIENCE-HIGHER*))
@@ -374,7 +375,7 @@
     (proto-path-join ?run-metadata-proto-path "task.execute_code.stdout[*]"))
   (run-metadata-proto-update-field ?path ?stdout ?op)
   (operation-events-add-task-node-execute-code-stdout-event
-    ?op ?tree-id ?node-id ?stdout)
+    ?op ?stdout ?run-metadata-proto-path)
   (retract ?ces)
 )
 
@@ -392,7 +393,7 @@
   (run-metadata-proto-update-field ?path ?loop-num-times ?op)
   (modify ?node (run-metadata-proto-num-iterations ?loop-num-times))
   (operation-events-add-counter-change-event
-    ?op ?tree-id ?node-id ?loop-num-times)
+    ?op ?loop-num-times ?run-metadata-proto-path)
 )
 
 (defrule behavior-tree-state-proto-update-retry-num-tries
@@ -408,7 +409,7 @@
   (run-metadata-proto-update-field ?path ?retry-num-tries ?op)
   (modify ?node (run-metadata-proto-num-iterations ?retry-num-tries))
   (operation-events-add-counter-change-event
-    ?op ?tree-id ?node-id ?retry-num-tries)
+    ?op ?retry-num-tries ?run-metadata-proto-path)
 )
 
 (defrule behavior-tree-state-proto-update-breakpoint
@@ -462,7 +463,7 @@
   (modify ?node (run-metadata-proto-execution-mode ?mode)
                 (run-metadata-proto-execution-mode-result-state ?result-state))
   (operation-events-add-node-execution-settings-change-event
-    ?op ?tree-id ?node-id ?mode ?result-state)
+    ?op ?mode ?result-state ?run-metadata-proto-path)
 )
 
 (defrule run-metadata-proto-update-scene-id

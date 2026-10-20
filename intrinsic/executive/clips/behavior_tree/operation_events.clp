@@ -39,24 +39,52 @@
 
 ; --------------------------------- FUNCTIONS ---------------------------------
 
+
+(deffunction run-metadata-proto-get-element-path
+    (?run-metadata-proto-path ?operation-name)
+
+  (do-for-fact ((?op operation-envelope)) (eq ?op:name ?operation-name)
+    (if (<> ?op:run-metadata-proto 0) then
+      (return
+        (pb-get-repeated-values ?op:run-metadata-proto
+          (proto-path-join ?run-metadata-proto-path "element_path.ids")))
+    )
+  )
+
+  (return (create$))
+)
+
+
 (deffunction operation-events-add-tree-state-change-event (?operation-name
-               ?tree-id ?proto-state)
+               ?proto-state ?run-metadata-proto-path)
 
   (bind ?event-proto
     (pb-create "intrinsic_proto.executive.OperationEvent"))
-  (pb-set-field ?event-proto "tree_state.tree_resolved_id" (str-cat ?tree-id))
+
+  (bind ?element-path
+    (run-metadata-proto-get-element-path ?run-metadata-proto-path
+                                         ?operation-name))
+  (pb-set-repeated-values ?event-proto "tree_state.element_path.ids"
+                          ?element-path)
+
+
   (pb-set-field ?event-proto "tree_state.state" ?proto-state)
   (operation-events-add-event ?operation-name ?event-proto)
 
 )
 
 (deffunction operation-events-add-node-state-change-event (?operation-name
-               ?tree-id ?node-id ?proto-state ?was-recovered)
+               ?proto-state ?was-recovered ?run-metadata-proto-path)
 
   (bind ?event-proto
     (pb-create "intrinsic_proto.executive.OperationEvent"))
-  (set-node-identifier-proto ?event-proto "node_state.node_identifier"
-                             ?tree-id ?node-id)
+
+  (bind ?element-path
+    (run-metadata-proto-get-element-path ?run-metadata-proto-path
+                                         ?operation-name))
+  (pb-set-repeated-values ?event-proto "node_state.element_path.ids"
+                          ?element-path)
+
 
   (pb-set-field ?event-proto "node_state.state" ?proto-state)
   (pb-set-field ?event-proto "node_state.recovered" ?was-recovered)
@@ -65,12 +93,17 @@
 )
 
 (deffunction operation-events-add-task-node-state-change-event (?operation-name
-               ?tree-id ?node-id ?proto-state)
+               ?proto-state ?run-metadata-proto-path)
 
   (bind ?event-proto
     (pb-create "intrinsic_proto.executive.OperationEvent"))
-  (set-node-identifier-proto ?event-proto "task_node_state.node_identifier"
-                             ?tree-id ?node-id)
+
+  (bind ?element-path
+    (run-metadata-proto-get-element-path ?run-metadata-proto-path
+                                         ?operation-name))
+  (pb-set-repeated-values ?event-proto "task_node_state.element_path.ids"
+                          ?element-path)
+
 
   (pb-set-field ?event-proto "task_node_state.state" ?proto-state)
   (operation-events-add-event ?operation-name ?event-proto)
@@ -78,13 +111,17 @@
 )
 
 (deffunction operation-events-add-task-node-execute-code-stdout-event
-               (?operation-name ?tree-id ?node-id ?stdout)
+               (?operation-name ?stdout ?run-metadata-proto-path)
 
   (bind ?event-proto
     (pb-create "intrinsic_proto.executive.OperationEvent"))
-  (set-node-identifier-proto ?event-proto
-                             "task_node_execute_code_stdout.node_identifier"
-                             ?tree-id ?node-id)
+
+  (bind ?element-path
+    (run-metadata-proto-get-element-path ?run-metadata-proto-path
+                                         ?operation-name))
+  (pb-set-repeated-values
+    ?event-proto "task_node_execute_code_stdout.element_path.ids" ?element-path)
+
 
   (pb-set-field ?event-proto "task_node_execute_code_stdout.stdout" ?stdout)
   (operation-events-add-event ?operation-name ?event-proto)
@@ -92,12 +129,16 @@
 )
 
 (deffunction operation-events-add-counter-change-event (?operation-name
-               ?tree-id ?node-id ?counter)
+               ?counter ?run-metadata-proto-path)
 
   (bind ?event-proto
     (pb-create "intrinsic_proto.executive.OperationEvent"))
-  (set-node-identifier-proto ?event-proto "counter.node_identifier"
-                             ?tree-id ?node-id)
+
+  (bind ?element-path
+    (run-metadata-proto-get-element-path ?run-metadata-proto-path
+                                         ?operation-name))
+  (pb-set-repeated-values ?event-proto "counter.element_path.ids" ?element-path)
+
 
   (pb-set-field ?event-proto "counter.value" ?counter)
   (operation-events-add-event ?operation-name ?event-proto)
@@ -150,13 +191,18 @@
 )
 
 (deffunction operation-events-add-node-execution-settings-change-event
-               (?operation-name ?tree-id ?node-id ?mode ?result-state)
+               (?operation-name ?mode ?result-state ?run-metadata-proto-path)
 
   (bind ?event-proto
     (pb-create "intrinsic_proto.executive.OperationEvent"))
-  (set-node-identifier-proto ?event-proto
-                             "node_execution_settings.node_identifier"
-                             ?tree-id ?node-id)
+
+  (bind ?element-path
+    (run-metadata-proto-get-element-path ?run-metadata-proto-path
+                                         ?operation-name))
+  (pb-set-repeated-values
+    ?event-proto "node_execution_settings.element_path.ids" ?element-path)
+
+
   (pb-set-field ?event-proto "node_execution_settings.settings.mode" ?mode)
   ; disabled_result_state will only be set if the mode is set to DISABLED and
   ; the user explicitly set a custom behavior. See behavior-tree-node slot

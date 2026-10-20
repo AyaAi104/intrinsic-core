@@ -26,23 +26,29 @@ import "intrinsic/executive/proto/run_metadata.proto";
 option go_package = "intrinsic/executive/proto/executive_events_go_proto";
 
 message TreeStateChangeEvent {
-  BehaviorTree.State state = 1;
-  string tree_resolved_id = 2;
+
+  BehaviorTree.ElementPath element_path = 1;
+
+  BehaviorTree.State state = 2;
 }
 
 message NodeStateChangeEvent {
-  BehaviorTree.NodeIdentifier node_identifier = 1;
+
+  BehaviorTree.ElementPath element_path = 1;
+
   BehaviorTree.Node.State state = 2;
   // The recovered flag from BehaviorTree.Node. Usually true, when a state
   // change originated from recovery
   bool recovered = 3;
 }
+
 message ConditionStateChangeEvent {
-  BehaviorTree.Condition.State state = 1;
+
+  BehaviorTree.ElementPath element_path = 1;
+
+  BehaviorTree.Condition.State state = 2;
   optional bool satisfied =
-      2;  // Only set when the condition was evaluated successfully
-  string tree_resolved_id = 3;
-  uint32 condition_id = 4;
+      3;  // Only set when the condition was evaluated successfully
 }
 
 message BreakpointChangeEvent {
@@ -51,22 +57,30 @@ message BreakpointChangeEvent {
   BehaviorTree.Breakpoint breakpoint = 1;
 }
 message NodeExecutionSettingsChangeEvent {
-  BehaviorTree.NodeIdentifier node_identifier = 1;
+
+  BehaviorTree.ElementPath element_path = 1;
+
   BehaviorTree.Node.ExecutionSettings settings = 2;
 }
 
 message TaskNodeStateChangeEvent {
-  BehaviorTree.NodeIdentifier node_identifier = 1;
+
+  BehaviorTree.ElementPath element_path = 1;
+
   BehaviorTree.TaskNode.State state = 2;
 }
 message TaskNodeExecuteCodeStdoutEvent {
-  BehaviorTree.NodeIdentifier node_identifier = 1;
+
+  BehaviorTree.ElementPath element_path = 1;
+
   string stdout = 2;
 }
 
 // Counter value change for a loop or retry node
 message CounterChangeEvent {
-  BehaviorTree.NodeIdentifier node_identifier = 1;
+
+  BehaviorTree.ElementPath element_path = 1;
+
   uint32 value = 2;
 }
 
