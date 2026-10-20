@@ -1250,8 +1250,25 @@ grpc::Status ConductorImpl::RestoreWorld(grpc::ServerContext* context,
                                          const RestoreWorldRequest* request,
                                          RestoreWorldResponse* response) {
   const stats::ScopedSpan span("conductor.RestoreWorld", context);
+
+  absl::MutexLock lock(mu_);
+  if (execution_context_ == nullptr) {
+    return ErrInvalidExecutionContext();
+  }
+
+  if (request->id() != execution_context_->EditWorldID()) {
+    const std::string error_msg =
+        absl::StrCat("cannot restore world \"", request->id(),
+                     "\": can only restore the current edit world \"",
+                     execution_context_->EditWorldID(), "\"");
+    LOG(ERROR) << "RestoreWorld: " << error_msg;
+    return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, error_msg);
+  }
+
   // TODO(b/375021242): Consider skipping invalid updates here if there are user
   // complaints about not restorable saves.
+  // Holds `mu_` during the composition so that the edit world cannot change
+  // concurrently, e.g., by StartSolution.
   auto update_result =
       resource_world_->UpdateWorldFromResourceSet(request->id(), false);
   if (!update_result.ok()) {
@@ -1262,12 +1279,8 @@ grpc::Status ConductorImpl::RestoreWorld(grpc::ServerContext* context,
     return grpc::Status(grpc::StatusCode::INTERNAL, error_msg);
   }
 
-  absl::MutexLock lock(mu_);
-  if (execution_context_ != nullptr &&
-      request->id() == execution_context_->EditWorldID()) {
-    INTR_RETURN_IF_ERROR_GRPC(
-        execution_context_->SetEditWorldStatus(std::nullopt));
-  }
+  INTR_RETURN_IF_ERROR_GRPC(
+      execution_context_->SetEditWorldStatus(std::nullopt));
   return grpc::Status::OK;
 }
 
