@@ -106,6 +106,7 @@ cc_library(
         "//intrinsic_sdk/intrinsic/util/status:status_specs",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
@@ -118,6 +119,7 @@ cc_library(
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
         "@com_googlesource_code_re2//:re2",
+        "@intrinsic_apis//intrinsic/util/status:extended_status_cc_proto",
     ],
 )
 

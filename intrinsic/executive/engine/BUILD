@@ -209,6 +209,7 @@ cc_library(
         "//intrinsic/assets/dependencies:resolver_cc",
         "//intrinsic/assets/proto/v1alpha1:asset_info_internal_cc_grpc",
         "//intrinsic/assets/proto/v1alpha1:asset_info_internal_cc_proto",
+        "//intrinsic/executive/clips/cc:id_handling",
         "//intrinsic/executive/clips_cpp",
         "//intrinsic/executive/clips_cpp:clips_protobuf",
         "//intrinsic/stats:scoped_span",
@@ -249,6 +250,7 @@ cc_library(
     hdrs = ["clips_importer.h"],
     deps = [
         ":skill_client_generator",
+        "//intrinsic/executive/clips/cc:id_handling",
         "//intrinsic/executive/clips_cpp",
         "//intrinsic/executive/clips_cpp:clips_protobuf",
         "//intrinsic/executive/validation:validate_behavior_tree",
