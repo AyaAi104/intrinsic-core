@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"intrinsic/assets/build_defs/assetprocessor"
@@ -50,7 +51,6 @@ import (
 	"intrinsic/util/status/extstatus"
 
 	lropb "cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"github.com/bazelbuild/rules_go/go/runfiles"
 	backoff "github.com/cenkalti/backoff/v4"
 	log "github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -353,11 +353,7 @@ $ bazel run //intrinsic/config:empty_application --\
 					ReferencedDataProcessor: rdProcessor,
 				},
 				PathResolver: func(path string) (string, error) {
-					r, err := runfiles.New()
-					if err != nil {
-						return "", err
-					}
-					return r.Rlocation(path)
+					return filepath.Join(filepath.Dir(assetsPath), path), nil
 				},
 				ConcurrencyLimiter: processingLimiter,
 			}

@@ -144,7 +144,6 @@ go_binary(
         "@intrinsic_apis//intrinsic/config/proto:operation_mode_go_proto",
         "@intrinsic_apis//intrinsic/frontend/solution_service/proto:status_go_proto",
         "@intrinsic_apis//intrinsic/storage/content_addressable_storage/proto:cas_service_go_proto",
-        "@io_bazel_rules_go//go/runfiles:go_default_library",
         "@io_opencensus_go//trace:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",

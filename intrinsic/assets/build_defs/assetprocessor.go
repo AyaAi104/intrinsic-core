@@ -113,7 +113,11 @@ func processAsset(ctx context.Context, a *assetpb.LocalSolution_Asset, proc *Pro
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse local Asset ID: %w", err)
 		}
-		p, err := proc.PathResolver(localInfo.GetBundleRunfilesPath())
+		resolvePath := proc.PathResolver
+		if resolvePath == nil {
+			resolvePath = func(path string) (string, error) { return path, nil }
+		}
+		p, err := resolvePath(localInfo.GetBundlePath())
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve path prefix for Asset %s: %w", id, err)
 		}
@@ -215,12 +219,12 @@ func convertInstances(ctx context.Context, instanceInfos []*assetpb.AssetInstanc
 		var config *icpb.InstanceConfig
 		if i.GetParsed() != nil {
 			config = i.GetParsed()
-		} else if i.GetConfigRunfilesPath() != "" {
+		} else if i.GetConfigPath() != "" {
 			resolvePath := pathResolver
 			if resolvePath == nil {
 				resolvePath = func(path string) (string, error) { return path, nil }
 			}
-			p, err := resolvePath(i.GetConfigRunfilesPath())
+			p, err := resolvePath(i.GetConfigPath())
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve config path for instance %q: %w", i.GetName(), err)
 			}
