@@ -25,9 +25,3 @@ alias(
     actual = "//intrinsic_sdk/intrinsic/frontend/solution_service/proto:solution_service_go_proto",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
-
-alias(
-    name = "sequence_list_go_proto",
-    actual = "//intrinsic_sdk/intrinsic/frontend/solution_service/proto:sequence_list_go_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)

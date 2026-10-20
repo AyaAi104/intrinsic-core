@@ -157,20 +157,8 @@ alias(
 )
 
 alias(
-    name = "run_metadata_go_proto",
-    actual = "//intrinsic_sdk/intrinsic/executive/proto:run_metadata_go_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "behavior_tree_proto",
     actual = "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_proto",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
-    name = "behavior_tree_go_proto",
-    actual = "//intrinsic_sdk/intrinsic/executive/proto:behavior_tree_go_proto",
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
