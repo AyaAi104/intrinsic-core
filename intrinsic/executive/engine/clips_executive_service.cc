@@ -319,7 +319,8 @@ ClipsExecutiveService::CreateService(
     std::unique_ptr<intrinsic::executive::ClipsExecutor> executor) {
   std::unique_ptr<ClipsExecutiveService> service =
       absl::WrapUnique(new ClipsExecutiveService(std::move(executor)));
-  service->InitLogging(absl::GetFlag(FLAGS_grpc_client_connection_timeout));
+  INTR_RETURN_IF_ERROR(service->InitLogging(
+      absl::GetFlag(FLAGS_grpc_client_connection_timeout)));
   return std::move(service);
 }
 
@@ -358,21 +359,20 @@ void ClipsExecutiveService::Shutdown() {
 // Important: This must continue to be called even if the logger is not used
 // directly in this file. Downstream components (e.g. skill service client)
 // depend on the logger being initialized by the executive.
-void ClipsExecutiveService::InitLogging(absl::Duration grpc_connect_timeout) {
+absl::Status ClipsExecutiveService::InitLogging(
+    absl::Duration grpc_connect_timeout) {
   if (logging_initialized_) {
-    return;  // StartUpIntrinsicLoggerViaGrpc should only be called once at
-             // startup.
+    return absl::OkStatus();  // StartUpIntrinsicLoggerViaGrpc should only be
+                              // called once at startup.
   }
   if (std::string data_logger_address =
           absl::GetFlag(FLAGS_data_logger_grpc_service_address);
       !data_logger_address.empty()) {
-    auto s = intrinsic::data_logger::StartUpIntrinsicLoggerViaGrpc(
-        data_logger_address, grpc_connect_timeout);
-    if (!s.ok()) {
-      LOG(ERROR) << "Failed to connect to data logger: " << s;
-    }
+    INTR_RETURN_IF_ERROR(intrinsic::data_logger::StartUpIntrinsicLoggerViaGrpc(
+        data_logger_address, grpc_connect_timeout));
   }
   logging_initialized_ = true;
+  return absl::OkStatus();
 }
 
 absl::Status ClipsExecutiveService::InitExecutor() {
@@ -380,7 +380,7 @@ absl::Status ClipsExecutiveService::InitExecutor() {
                         BuildExecutiveConfig());
   absl::Duration grpc_connect_timeout =
       ToAbslDurationNoValidation(config.grpc_client_connection_timeout());
-  InitLogging(grpc_connect_timeout);
+  INTR_RETURN_IF_ERROR(InitLogging(grpc_connect_timeout));
 
   INTR_ASSIGN_OR_RETURN(
       std::unique_ptr<intrinsic::skills::SkillRegistryClientInterface>
