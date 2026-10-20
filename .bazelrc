@@ -226,12 +226,19 @@ common:haswell --cpu=haswell
 common:haswell --copt=-mcrc32
 common --config=haswell
 
+# Split DWARF (Fission) with Zstd-compressed debug sections (go/fast/37).
+# Emits Zstd-compressed .debug_line in the binary and offloads .debug_info to .dwo files.
+# Note: --fission=yes automatically passes -gsplit-dwarf -g in toolchains_llvm, so --copt=-g is not needed.
+common:fission --fission=yes
+common:fission --copt=-gz=zstd
+common:fission --linkopt=-Wl,--compress-debug-sections=zstd
+
 # Address sanitizer
 common:asan --strip=never
 common:asan --@llvm//config:asan
 common:asan --copt -DADDRESS_SANITIZER
 common:asan --copt -O1
-common:asan --copt -g
+common:asan --config=fission
 common:asan --copt -fno-omit-frame-pointer
 common:asan --test_env=ASAN_OPTIONS=detect_leaks=0:detect_odr_violation=0
 test:asan --test_tag_filters=-noasan
@@ -241,7 +248,7 @@ common:msan --strip=never
 common:msan --@llvm//config:msan
 common:msan --copt -DMEMORY_SANITIZER
 common:msan --copt -O1
-common:msan --copt -g
+common:msan --config=fission
 common:msan --copt -fno-omit-frame-pointer
 test:msan --test_tag_filters=-nomsan
 
@@ -250,7 +257,7 @@ common:tsan --strip=never
 common:tsan --@llvm//config:tsan
 common:tsan --copt -DTHREAD_SANITIZER
 common:tsan --copt -O1
-common:tsan --copt -g
+common:tsan --config=fission
 common:tsan --copt -fno-omit-frame-pointer
 test:tsan --test_tag_filters=-notsan
 
@@ -259,7 +266,7 @@ common:ubsan --strip=never
 common:ubsan --@llvm//config:ubsan
 common:ubsan --copt -DUNDEFINED_BEHAVIOR_SANITIZER
 common:ubsan --copt -O1
-common:ubsan --copt -g
+common:ubsan --config=fission
 common:ubsan --copt -fno-omit-frame-pointer
 common:ubsan --test_env=UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=0
 test:ubsan --test_tag_filters=-noubsan
@@ -269,7 +276,7 @@ common:rtsan --strip=never
 common:rtsan --@llvm//config:rtsan
 common:rtsan --copt -DREALTIME_SANITIZER
 common:rtsan --copt -O1
-common:rtsan --copt -g
+common:rtsan --config=fission
 common:rtsan --copt -fno-omit-frame-pointer
 test:rtsan --test_tag_filters=-nortsan
 
