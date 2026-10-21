@@ -29,7 +29,7 @@ import (
 	"intrinsic/util/proto/registryutil"
 
 	log "github.com/golang/glog"
-	"go.opencensus.io/trace" 
+	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
@@ -97,17 +97,13 @@ func (pa *processedAsset) parseConfig(ctx context.Context, b []byte, provider bu
 }
 
 func processAsset(ctx context.Context, a *assetpb.LocalSolution_Asset, proc *Processor) (*processedAsset, error) {
-
 	ctx, span := trace.StartSpan(ctx, "assetprocessor.processAsset")
 	defer span.End()
-
 	switch a.GetVariant().(type) {
 	case *assetpb.LocalSolution_Asset_Local:
 		localInfo := a.GetLocal()
-
 		span.AddAttributes(trace.StringAttribute("asset_id", idutils.IDFromProtoUnchecked(localInfo.GetId())))
 		span.AddAttributes(trace.StringAttribute("asset_type", localInfo.GetAssetType().String()))
-
 
 		id, err := idutils.IDFromProto(localInfo.GetId())
 		if err != nil {
@@ -134,10 +130,8 @@ func processAsset(ctx context.Context, a *assetpb.LocalSolution_Asset, proc *Pro
 
 	case *assetpb.LocalSolution_Asset_Catalog:
 		catalogInfo := a.GetCatalog()
-
 		span.AddAttributes(trace.StringAttribute("asset_id", idutils.IDFromProtoUnchecked(catalogInfo.GetIdVersion().GetId())))
 		span.AddAttributes(trace.StringAttribute("asset_type", catalogInfo.GetAssetType().String()))
-
 		idVersion := catalogInfo.GetIdVersion()
 		id, err := idutils.IDFromProto(idVersion.GetId())
 		if err != nil {
@@ -173,10 +167,8 @@ func processAsset(ctx context.Context, a *assetpb.LocalSolution_Asset, proc *Pro
 }
 
 func convertAssets(ctx context.Context, solutionAssets []*assetpb.LocalSolution_Asset, proc *Processor) (map[string]*processedAsset, error) {
-
 	ctx, span := trace.StartSpan(ctx, "assetprocessor.convertAssets")
 	defer span.End()
-
 	// NOTE: Pre-allocate all results to avoid data races in the goroutines below.
 	results := make([]*processedAsset, len(solutionAssets))
 	fns := make([]func(context.Context) error, len(solutionAssets))
@@ -337,10 +329,8 @@ type Processor struct {
 // Process processes the solution assets and returns the corresponding
 // SolutionDeployment.
 func (proc *Processor) Process(ctx context.Context, sa *assetpb.LocalSolution) (*solutiondeploymentpb.SolutionDeployment, error) {
-
 	ctx, span := trace.StartSpan(ctx, "assetprocessor.Process")
 	defer span.End()
-
 	var preprocessedLocalSolution []*assetpb.LocalSolution_Asset
 	if proc.SolutionAssetPreprocessor != nil {
 		preprocessedLocalSolution = make([]*assetpb.LocalSolution_Asset, len(sa.GetAssets()))
