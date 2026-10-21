@@ -13,9 +13,6 @@
 # limitations under the License.
 
 
-# Enable Bzlmod for every Bazel command
-common --enable_bzlmod
-common --enable_workspace=false
 
 # Custom downloader configs. This makes it so that external URLs to download dependencies from
 # can be rewritten at build time and, for example, support custom mirrors.
@@ -38,27 +35,21 @@ common --host_cxxopt='-std=c++20'
 common --@llvm//config:fastbuild_optimization_mode=O1
 
 
-# Use a static value for `PATH` and does not inherit `LD_LIBRARY_PATH`. Doesn't let environment
-# variables like `PATH` sneak into the build, which can cause massive cache misses when they change.
-# Use `--action_env=ENV_VARIABLE` if you want to inherit specific environment variables from the
-# client, but note that doing so can prevent cross-user caching if a shared cache is used.
-# Docs: https://bazel.build/reference/command-line-reference#flag--incompatible_strict_action_env
-common --incompatible_strict_action_env
-
 # Silences spurious warnings like:
 # `bazel-out/k8-fastbuild/bin/external/com_github_grpc_grpc/external/com_github_grpc_grpc: warning: directory does not exist`
 common --incompatible_default_to_explicit_init_py
 
 # Incompatible flags which will be flipped in future Bazel versions
 # Taken from https://github.com/bazelbuild/bazel-central-registry/blob/main/incompatible_flags.yml
-# https://github.com/bazelbuild/bazel/issues/22080
-common --incompatible_disable_native_repo_rules
-# https://github.com/bazelbuild/bazel/issues/25755
-common --incompatible_disable_autoloads_in_main_repo
 # https://github.com/bazelbuild/bazel/issues/23043
-# TODO requires Bazel 8.5 or 9 for http_jar()
-# TODO requires grpc-java https://github.com/grpc/grpc-java/commit/b61a8f49c0e14f98f5315deb2ca89d67d1e2ea4a
-#common --incompatible_autoload_externally=
+# In Bazel 9, --incompatible_autoload_externally defaults to empty, disabling
+# autoloads across all external repositories. Some external dependencies do not
+# explicitly load rules like cc_library, proto_library, etc. Can be removed once all
+# external dependencies add explicit load statements for their rules.
+# Not a complete inventory, but at the time of writing:
+# * rules_cc is needed for @io_opentelemetry_cpp, @rules_android (transitive dep).
+# * com_google_protobuf is needed for @tink_cc.
+common --incompatible_autoload_externally=+@rules_cc,+@com_google_protobuf
 # https://github.com/bazelbuild/bazel/issues/17032
 # TODO requires xacro https://github.com/ros/xacro/commit/1f24172cbe9af4ebd7fcb820d06f071f92fff65b
 # TODO requires protoc-gen-validate 1.3.0 https://github.com/bufbuild/protoc-gen-validate/commit/0ca681bd2fe572c34890405ff36147b22be8d8f5
@@ -68,6 +59,14 @@ common --incompatible_disable_autoloads_in_main_repo
 # https://github.com/bazelbuild/bazel/issues/23144
 # TODO requires rules_license https://github.com/bazelbuild/rules_license/pull/178
 #common --noincompatible_enable_deprecated_label_apis
+
+# In Bazel 9, external repository include directories default to -I instead of -isystem.
+# see https://github.com/bazelbuild/bazel/commit/2dde0d53a3c867b3b862c951092b25bae623d409.
+# This causes compiler warnings in third-party headers (e.g. OpenMesh, ceres, versor) to be
+# treated as errors under -Werror. Enabling external_include_paths reverts to the
+# Bazel 8 behaviour that routes external includes to -isystem, which does not have this problem..
+# Can be reverted if insrc toolchains or third-party headers are updated to eliminate all warnings (maybe unlikely).
+common --features=external_include_paths
 
 # Avoid warnings from third-party deps that we don't control.
 common --output_filter='^//((?!(external):).)*$'
@@ -275,7 +274,6 @@ test:rtsan --test_tag_filters=-nortsan
 # Define a dynamic execution strategy (https://bazel.build/remote/dynamic)
 # causing some build actions to run both locally and remotely and using whichever
 # finishes first. Only usable together with --config=remote.
-common:dynamic --internal_spawn_scheduler
 # Also run for [for tool] actions
 common:dynamic --noexperimental_dynamic_exclude_tools
 # Specify which mnemonics use this strategy. To check which

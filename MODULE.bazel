@@ -605,7 +605,10 @@ bazel_dep(name = "qhull", version = "8.0.2.bcr.2")
 bazel_dep(name = "re2", version = "2025-11-05.bcr.1", repo_name = "com_googlesource_code_re2")
 bazel_dep(name = "riegeli", version = "0.0.0-20250822-9f2744d", repo_name = "com_google_riegeli")
 bazel_dep(name = "roboticslibrary.rl", version = "0.0.0-20250723-5bbd773.bcr.4")  
-
+# TODO(b/558286754): Bumping indirect dependency for Bazel 9 compatibility.
+# Another option is setting `--repo_env=ANDROID_HOME=` to disable loading it, but that risks
+# breaking downstream consumers.
+bazel_dep(name = "rules_android", version = "0.7.0")
 # TODO(b/489481888): Remove once grpc upgrades its transitive rules_apple
 # dependency from 3.16.0 to >= 4.x (grpc 1.81.1 in #58249 pulls in
 # rules_apple 3.16.0, which is incompatible with rules_swift 3.1.2 from
@@ -989,6 +992,21 @@ single_version_override(
 )
 
 
+
+# Use latest commit on `main` to support Bazel 9.
+# We need the upstream fixes https://github.com/bazelbuild/rules_license/pull/182 and
+# https://github.com/bazelbuild/rules_license/pull/178 but they have not been
+# released yet.
+# TODO(alexanderfaxa): Remove once a release containing PR #182 and PR #178 is in BCR.
+# This was requested on https://github.com/bazelbuild/rules_license/pull/182.
+archive_override(
+    module_name = "rules_license",
+    integrity = "sha256-NNV3jpsOz37HAMQePA0ZUY5IGAEJIgcSNvSNGIUQAa4=",
+    strip_prefix = "rules_license-c596de38b2856bf16334ba6e091d6a6a5042bd48",
+    urls = [
+        "https://github.com/bazelbuild/rules_license/archive/c596de38b2856bf16334ba6e091d6a6a5042bd48.tar.gz",
+    ],
+)
 
 # Needed to build rules_ros2 messages and tf2
 extension_for_rules_ros2 = use_extension("@com_github_mvukov_rules_ros2//ros2:extensions.bzl", "non_module_deps")
