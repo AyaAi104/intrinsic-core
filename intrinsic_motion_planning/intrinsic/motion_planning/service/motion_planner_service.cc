@@ -319,6 +319,9 @@ void FromProto(
       proto_config.enable_motion_planner_service_caching_fuzzy_check();
   config.max_diff_in_rad_for_starting_robot_configuration_threshold =
       proto_config.joint_tolerance_in_rad();
+  if (proto_config.has_log_all_recordings()) {
+    config.log_all_recordings = proto_config.log_all_recordings();
+  }
 }
 
 absl::StatusOr<WorldAndProto>

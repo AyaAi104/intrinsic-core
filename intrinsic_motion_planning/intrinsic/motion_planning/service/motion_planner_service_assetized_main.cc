@@ -169,10 +169,6 @@ int MainImpl() {
 
   FromProto(proto_config, mps_config);
 
-  if (proto_config.has_log_all_recordings()) {
-    mps_config.log_all_recordings = proto_config.log_all_recordings();
-  }
-
   std::unique_ptr<PlanTrajectoryCache> cache = nullptr;
   if (proto_config.enable_motion_planner_service_caching()) {
     MotionPlanningRequestCacheKeyDistance::IsValidForCacheHitOptions

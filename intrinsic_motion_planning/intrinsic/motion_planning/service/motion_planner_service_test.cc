@@ -147,13 +147,17 @@ TEST(MotionPlannerServiceConfigProtoTest, FromProto) {
       true);
   proto_config.set_enable_motion_planner_service_caching_fuzzy_check(true);
   proto_config.set_joint_tolerance_in_rad(0.005);
+  proto_config.set_log_all_recordings(true);
   MotionPlannerServiceConfig config;
   FromProto(proto_config, config);
 
+  // Expect that `FromProto()` populates the configuration fields from
+  // `proto_config`.
   EXPECT_TRUE(config.flags.enable_path_refinement_validation_step);
   EXPECT_TRUE(config.enable_motion_planner_service_caching_fuzzy_check);
   EXPECT_DOUBLE_EQ(
       config.max_diff_in_rad_for_starting_robot_configuration_threshold, 0.005);
+  EXPECT_TRUE(config.log_all_recordings);
 }
 TEST_P(MotionPlannerServiceWithoutLoggerTest, ValidIk) {
   intrinsic_proto::motion_planning::v1::IkRequest request =

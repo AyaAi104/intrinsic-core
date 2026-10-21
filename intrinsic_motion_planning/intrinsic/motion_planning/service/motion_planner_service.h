@@ -99,8 +99,9 @@ struct MotionPlannerServiceConfig {
   // of the flags therein contained.
   MotionPlannerFlags flags = {};
 
-  // If true, creates a recording for all motion planning calls.
-  // If false (default), restricts automated recordings to only failed plans.
+  // If true, creates a recording for all motion planning calls, including
+  // successful calls and routine failures (e.g. unreachable or in-collision IK
+  // targets), instead of only unexpected failures.
   bool log_all_recordings = false;
 };
 
