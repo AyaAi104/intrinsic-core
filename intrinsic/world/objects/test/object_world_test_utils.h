@@ -348,6 +348,19 @@ CreateSceneObjectForPinchGripper(double upper_joint_limit = 1.0,
 absl::StatusOr<intrinsic_proto::scene_object::v1::SceneObject>
 CreateSceneObjectForSuctionGripper();
 
+// Returns the default joint limits for the 7-DoF test robot in
+// `CreateTestWorldWith7DofRobot()`.
+JointLimitsXd GetDefault7DofLimits();
+
+// Creates a test world containing a synthetic 7-DoF serial manipulator robot
+// named `robot_name` with alternating Z/Y revolute joints (`joint_1` through
+// `joint_7`), links (`base_link` and `link_1` through `link_7` with distinct
+// link lengths), a `flange` frame attached to `link_7`, default Cartesian
+// limits, and the specified joint `application_limits`.
+absl::StatusOr<World> CreateTestWorldWith7DofRobot(
+    absl::string_view robot_name = "my_robot",
+    const JointLimitsXd& application_limits = GetDefault7DofLimits());
+
 // Matches a container which contains the expected_elements in the given order
 // but migh also contain any additional elements. 'expected_elements' has to be
 // an iterable container of matchers for the elements in 'arg'.

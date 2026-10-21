@@ -49,7 +49,7 @@ inline constexpr char kUr5eTestWorldGzfPath[] =
 // Struct holding per-robot-type configuration for test fixtures.
 struct RobotTestParams {
   std::string world_gzf_path;
-  std::string robot_name;
+  std::string robot_name = "my_robot";
 
   bool operator==(const RobotTestParams& other) const = default;
 };

@@ -300,14 +300,13 @@ cc_library(
     name = "motion_planner_base_test_fixture",
     testonly = True,
     srcs = ["motion_planner_base_test_fixture.cc"],
-    hdrs = [
-        "motion_planner_base_test_fixture.h",
-    ] + [],
+    hdrs = ["motion_planner_base_test_fixture.h"],
     deps = [
         "//intrinsic/skills/apps/testing:test_world",
         "//intrinsic/world",
         "//intrinsic/world:kinematic_world_views",
         "//intrinsic/world/objects:object_world",
+        "//intrinsic/world/objects/test:object_world_test_utils",
         "//intrinsic_kinematics/intrinsic/kinematics/types:cartesian_limits",
         "//intrinsic_kinematics/intrinsic/kinematics/types:joint_limits",
         "//intrinsic_kinematics/intrinsic/kinematics/types:joint_limits_xd",

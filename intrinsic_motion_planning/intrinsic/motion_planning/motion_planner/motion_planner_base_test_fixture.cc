@@ -42,6 +42,7 @@
 #include "intrinsic/world/objects/kinematic_object_internal.h"
 #include "intrinsic/world/objects/object_world.h"
 #include "intrinsic/world/objects/object_world_ids.h"
+#include "intrinsic/world/objects/test/object_world_test_utils.h"
 #include "intrinsic/world/world.h"
 
 namespace intrinsic {
@@ -134,8 +135,13 @@ absl::Status MotionPlannerBaseTest::InitializeWorld(
     const RobotTestParams& robot_params, const bool set_infinite_jerk_limits,
     const std::optional<eigenmath::VectorNd> start_configuration) {
   robot_params_ = robot_params;
-  INTR_ASSIGN_OR_RETURN(world_,
-                        testing::LoadTestWorld(robot_params.world_gzf_path));
+  if (robot_params.world_gzf_path.empty()) {
+    INTR_ASSIGN_OR_RETURN(world_, object_world::CreateTestWorldWith7DofRobot(
+                                      robot_params.robot_name));
+  } else {
+    INTR_ASSIGN_OR_RETURN(world_,
+                          testing::LoadTestWorld(robot_params.world_gzf_path));
+  }
 
   INTR_ASSIGN_OR_RETURN(object_world_,
                         object_world::ObjectWorld::CreateView(world_));

@@ -14,7 +14,10 @@
 
 #include "intrinsic/world/objects/test/object_world_test_utils.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <set>
@@ -33,6 +36,7 @@
 #include "intrinsic/geometry/api/shape_factory.h"
 #include "intrinsic/geometry/storage/dummy_storage.h"
 #include "intrinsic/geometry/storage/geometry_serializer.h"
+#include "intrinsic/kinematics/types/joint_limits_xd.h"
 #include "intrinsic/math/pose3.h"
 #include "intrinsic/math/proto_conversion.h"
 #include "intrinsic/resources/proto/geometric_resource_data.pb.h"
@@ -50,8 +54,12 @@
 #include "intrinsic/world/entity_id.h"
 #include "intrinsic/world/geometry_types.h"
 #include "intrinsic/world/hashing/hashing.h"
+#include "intrinsic/world/labels.h"
+#include "intrinsic/world/objects/kinematic_object_internal.h"
+#include "intrinsic/world/objects/object_world.h"
 #include "intrinsic/world/objects/object_world_creation_utils.h"
 #include "intrinsic/world/objects/object_world_ids.h"
+#include "intrinsic/world/objects/world_object_internal.h"
 #include "intrinsic/world/proto/collections_component.pb.h"
 #include "intrinsic/world/proto/kinematics_component.pb.h"
 #include "intrinsic/world/test/world_test_utils.h"
@@ -1040,6 +1048,159 @@ CreateSceneObjectForSuctionGripper() {
   (*geometry_set.mutable_named_geometries())["0"] = std::move(geo_proto);
 
   return scene_object;
+}
+
+JointLimitsXd GetDefault7DofLimits() {
+  JointLimitsXd limits;
+  limits.min_position = eigenmath::VectorXd::Constant(7, -3.0);
+  limits.max_position = eigenmath::VectorXd::Constant(7, 3.0);
+  limits.max_velocity = eigenmath::VectorXd::Constant(7, 2.0);
+  limits.max_acceleration = eigenmath::VectorXd::Constant(7, 100.0);
+  limits.max_jerk =
+      eigenmath::VectorXd::Constant(7, std::numeric_limits<double>::max());
+  limits.max_torque = eigenmath::VectorXd::Constant(7, 100.0);
+  return limits;
+}
+
+absl::StatusOr<World> CreateTestWorldWith7DofRobot(
+    absl::string_view robot_name, const JointLimitsXd& application_limits) {
+  if (!application_limits.IsSizeConsistent() ||
+      application_limits.min_position.size() != 7) {
+    return absl::InvalidArgumentError(
+        "application_limits must be size-consistent and have 7 DoFs.");
+  }
+
+  intrinsic_proto::scene_object::v1::SceneObject scene_object;
+  scene_object.set_name(std::string(robot_name));
+
+  auto* base_link = scene_object.add_entities();
+  base_link->set_name("base_link");
+  base_link->mutable_link();
+
+  struct JointSpec {
+    absl::string_view joint_name;
+    absl::string_view parent_link_name;
+    absl::string_view child_link_name;
+    Pose3d parent_t_inboard;
+  };
+  // Synthetic 7-DoF spherical-shoulder-elbow-wrist serial manipulator with
+  // alternating Z/Y revolute joint axes and distinct link lengths (0.21 m,
+  // 0.18 m, 0.23 m, 0.17 m, 0.26 m, 0.14 m, and 0.09 m).
+  const std::vector<JointSpec> joint_specs = {
+      {"joint_1", "base_link", "link_1",
+       Pose3d(eigenmath::Vector3d(0, 0, 0.21))},
+      {"joint_2", "link_1", "link_2",
+       Pose3d(eigenmath::Quaterniond(0, 0, M_SQRT1_2, M_SQRT1_2),
+              eigenmath::Vector3d(0, 0, 0.18))},
+      {"joint_3", "link_2", "link_3",
+       Pose3d(eigenmath::Quaterniond(0, 0, M_SQRT1_2, M_SQRT1_2),
+              eigenmath::Vector3d(0, 0.23, 0))},
+      {"joint_4", "link_3", "link_4",
+       Pose3d(eigenmath::Quaterniond(M_SQRT1_2, M_SQRT1_2, 0, 0),
+              eigenmath::Vector3d(0, 0, 0.17))},
+      {"joint_5", "link_4", "link_5",
+       Pose3d(eigenmath::Quaterniond(0, 0, M_SQRT1_2, M_SQRT1_2),
+              eigenmath::Vector3d(0, 0.26, 0))},
+      {"joint_6", "link_5", "link_6",
+       Pose3d(eigenmath::Quaterniond(M_SQRT1_2, M_SQRT1_2, 0, 0),
+              eigenmath::Vector3d(0, 0, 0.14))},
+      {"joint_7", "link_6", "link_7",
+       Pose3d(eigenmath::Quaterniond(0, 0, M_SQRT1_2, M_SQRT1_2),
+              eigenmath::Vector3d(0, 0.09, 0))},
+  };
+
+  const JointLimitsXd default_system_limits = GetDefault7DofLimits();
+  for (size_t i = 0; i < joint_specs.size(); ++i) {
+    const JointSpec& spec = joint_specs[i];
+    auto* joint = scene_object.add_entities();
+    joint->set_name(std::string(spec.joint_name));
+    joint->set_parent_name(std::string(spec.parent_link_name));
+    *joint->mutable_parent_t_this() = intrinsic::ToProto(spec.parent_t_inboard);
+    auto* kinematics = joint->mutable_joint()->mutable_kinematics_component();
+    kinematics->set_motion_type(
+        intrinsic_proto::world::KinematicsComponent::MOTION_TYPE_REVOLUTE);
+    *kinematics->mutable_axis() =
+        intrinsic::ToVectorProto(eigenmath::Vector3d::UnitZ());
+    *kinematics->mutable_parent_t_inboard() =
+        intrinsic::ToProto(spec.parent_t_inboard);
+    auto* system_limits = kinematics->mutable_system_limits();
+    system_limits->mutable_fixed_limits()->set_lower(
+        std::min(default_system_limits.min_position[i],
+                 application_limits.min_position[i]));
+    system_limits->mutable_fixed_limits()->set_upper(
+        std::max(default_system_limits.max_position[i],
+                 application_limits.max_position[i]));
+    system_limits->set_velocity(std::max(default_system_limits.max_velocity[i],
+                                         application_limits.max_velocity[i]));
+    system_limits->set_acceleration(
+        std::max(default_system_limits.max_acceleration[i],
+                 application_limits.max_acceleration[i]));
+    system_limits->set_jerk(std::max(default_system_limits.max_jerk[i],
+                                     application_limits.max_jerk[i]));
+    system_limits->set_effort(std::max(default_system_limits.max_torque[i],
+                                       application_limits.max_torque[i]));
+
+    auto* app_limits = kinematics->mutable_application_limits();
+    app_limits->mutable_fixed_limits()->set_lower(
+        application_limits.min_position[i]);
+    app_limits->mutable_fixed_limits()->set_upper(
+        application_limits.max_position[i]);
+    app_limits->set_velocity(application_limits.max_velocity[i]);
+    app_limits->set_acceleration(application_limits.max_acceleration[i]);
+    app_limits->set_jerk(application_limits.max_jerk[i]);
+    app_limits->set_effort(application_limits.max_torque[i]);
+
+    auto* link = scene_object.add_entities();
+    link->set_name(std::string(spec.child_link_name));
+    link->set_parent_name(std::string(spec.joint_name));
+    link->mutable_link();
+  }
+
+  auto* flange = scene_object.add_entities();
+  flange->set_name(FlangeFrameName().value());
+  flange->set_parent_name("link_7");
+  flange->mutable_frame();
+
+  auto* ik_solver =
+      scene_object.mutable_properties()->mutable_kinematics()->add_ik_solvers();
+  ik_solver->set_ik_solver("kinematic_chain");
+  ik_solver->set_tip_link_name("link_7");
+
+  CartesianLimits cart_limits;
+  cart_limits.max_rotational_jerk = 10.0;
+  cart_limits.max_rotational_acceleration = 10.0;
+  cart_limits.max_rotational_velocity = 1.0;
+  cart_limits.max_translational_position.setConstant(10.0);
+  cart_limits.min_translational_position.setConstant(-10.0);
+  cart_limits.max_translational_velocity.setConstant(1.0);
+  cart_limits.min_translational_velocity.setConstant(-1.0);
+  cart_limits.max_translational_acceleration.setConstant(10.0);
+  cart_limits.min_translational_acceleration.setConstant(-10.0);
+  cart_limits.max_translational_jerk.setConstant(10.0);
+  cart_limits.min_translational_jerk.setConstant(-10.0);
+  *scene_object.mutable_properties()->mutable_kinematics()->mutable_limits() =
+      intrinsic::scene_object::ToProto(cart_limits);
+
+  World world = World::CreateEmptyWorld();
+  INTR_ASSIGN_OR_RETURN(std::unique_ptr<ObjectWorld> object_world,
+                        ObjectWorld::CreateView(world));
+  INTR_ASSIGN_OR_RETURN(WorldObject * root_object,
+                        object_world->GetObject(RootObjectName()));
+  INTR_ASSIGN_OR_RETURN(
+      WorldObject * robot_object,
+      root_object->CreateChildObject(
+          WorldObjectName(robot_name), WorldObjectNameType::kNameIsGlobalAlias,
+          Pose3d::Identity(), /*geolib=*/nullptr, scene_object));
+  INTR_RETURN_IF_ERROR(robot_object->SetResourceName(robot_name));
+  INTR_ASSIGN_OR_RETURN(
+      const KinematicObject* kinematic_robot,
+      object_world->GetKinematicObject(WorldObjectName(robot_name)));
+  INTR_ASSIGN_OR_RETURN(AttachmentEntityId tip_id,
+                        world.GetFinalEntityOfRobotKinematicChain(
+                            kinematic_robot->GetRobotEntityId()));
+  INTR_ASSIGN_OR_RETURN(WorldEntity * tip_entity, world.GetEntityById(tip_id));
+  INTR_RETURN_IF_ERROR(tip_entity->AddLabels({labels::Tip()}));
+  return world;
 }
 
 }  // namespace object_world
