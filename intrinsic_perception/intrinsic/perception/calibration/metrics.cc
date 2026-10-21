@@ -21,6 +21,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "intrinsic/eigenmath/types.h"
 #include "intrinsic/perception/core/math_utils.h"
 #include "intrinsic/perception/core/pose_utils.h"
@@ -222,6 +223,14 @@ ComputeCameraToRobotValidationMetrics(
     const intrinsic_proto::perception::v1::CameraToRobotCalibrationRequest&
         request,
     const intrinsic_proto::Pose& pose) {
+  if (request.input_pose_pairs_size() < 2) {
+    return absl::FailedPreconditionError(
+        absl::StrCat("At least 2 valid captures are required to validate the "
+                     "camera-to-robot "
+                     "calibration, but only ",
+                     request.input_pose_pairs_size(), " were provided."));
+  }
+
   intrinsic_proto::perception::v1::CameraToRobotCalibrationResult dummy_result;
   if (request.type() == CAMERA_SETUP_MOVING) {
     *dummy_result.mutable_moving_camera_result_poses()

@@ -256,6 +256,7 @@ cc_library(
         "//intrinsic_sdk/intrinsic/eigenmath",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@intrinsic_apis//intrinsic/perception/proto/v1:camera_setup_cc_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:camera_to_robot_calibration_cc_proto",
     ],
