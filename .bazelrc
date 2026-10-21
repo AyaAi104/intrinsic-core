@@ -184,7 +184,6 @@ common --copt=-Werror
 # These are required to make code build which has been migrated from google3
 # (http://tools/cpp/warnings.bzl).
 common --per_file_copt=//.*@-Wno-deprecated-declarations  # TODO(b/467267084): Enable, warnings disabled because they are very spammy.
-common --per_file_copt=//.*@-Wno-error=deprecated-pragma  # TODO(b/467267841): Enable
 common --per_file_copt=//.*@-Wno-nullability-completeness # TODO(b/467268103): Enable, warnings disabled because they are very spammy.
 
 # TODO(b/381398679) Enable once https://github.com/bazel-contrib/rules_foreign_cc/issues/1333 is resolved
