@@ -653,14 +653,16 @@ absl::Status WorldObject::SetFrames(
 }
 
 absl::StatusOr<SimulationComponent*> WorldObject::GetSimulationComponent() {
-  if (!GetCollectionEntity()) {
+  const std::optional<CollectionsEntityId> collection_id =
+      GetCollectionEntity();
+  if (!collection_id.has_value()) {
     return absl::NotFoundError(
         absl::Substitute("Object with name \"$0\" has no SimulationComponent.",
                          GetName().value()));
   }
   INTR_ASSIGN_OR_RETURN(World * world, GetMutableEntityWorld());
   INTR_ASSIGN_OR_RETURN(WorldEntity * collection_entity,
-                        world->GetEntityById(*GetCollectionEntity()));
+                        world->GetEntityById(*collection_id));
   if (!collection_entity->HasComponent<SimulationComponent>()) {
     return absl::NotFoundError(
         absl::Substitute("Object with name \"$0\" has no SimulationComponent.",
@@ -675,15 +677,16 @@ absl::StatusOr<const SimulationComponent*> WorldObject::GetSimulationComponent()
     const {
   // Can't delegate to non-const implementation because `GetEntityWorld()` needs
   // to called here vs `GetMutableEntityWorld()` for non-const method.
-  if (!GetCollectionEntity()) {
+  const std::optional<CollectionsEntityId> collection_id =
+      GetCollectionEntity();
+  if (!collection_id.has_value()) {
     return absl::NotFoundError(
         absl::Substitute("Object with name \"$0\" has no SimulationComponent.",
                          GetName().value()));
   }
 
-  const World& world = const_cast<WorldObject*>(this)->GetEntityWorld();
   INTR_ASSIGN_OR_RETURN(const WorldEntity* collection_entity,
-                        world.GetEntityById(*GetCollectionEntity()));
+                        GetEntityWorld().GetEntityById(*collection_id));
   if (!collection_entity->HasComponent<SimulationComponent>()) {
     return absl::NotFoundError(
         absl::Substitute("Object with name \"$0\" has no SimulationComponent.",
@@ -696,14 +699,16 @@ absl::StatusOr<const SimulationComponent*> WorldObject::GetSimulationComponent()
 
 absl::Status WorldObject::SetSimulationComponent(
     const intrinsic_proto::world::SimulationComponent& proto) {
-  if (!GetCollectionEntity()) {
+  const std::optional<CollectionsEntityId> collection_id =
+      GetCollectionEntity();
+  if (!collection_id.has_value()) {
     return absl::InvalidArgumentError(absl::Substitute(
         "The object with name \"$0\" cannot have a simulation component.",
         GetName().value()));
   }
   INTR_ASSIGN_OR_RETURN(World * world, GetMutableEntityWorld());
   INTR_ASSIGN_OR_RETURN(WorldEntity * collection_entity,
-                        world->GetEntityById(*GetCollectionEntity()));
+                        world->GetEntityById(*collection_id));
   INTR_ASSIGN_OR_RETURN(
       SimulationComponent * simulation_component,
       collection_entity->GetOrCreateComponent<SimulationComponent>());
