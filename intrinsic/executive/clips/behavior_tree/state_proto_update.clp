@@ -195,6 +195,18 @@
   (return ?state)
 )
 
+; Maps a behavior-tree-condition state to a BehaviorTree.Condition.State proto
+; value.
+;
+; Args:
+;   ?state: behavior-tree-condition state symbol
+; Returns:
+;   The Condition.State enum value name as symbol
+(deffunction condition-proto-state-from-condition-state (?state)
+  (if (eq ?state START) then (return EVALUATING))
+  (return ?state)
+)
+
 ; ----------------------------------- RULES -----------------------------------
 
 (defrule behavior-tree-state-proto-update-tree
@@ -269,14 +281,25 @@
                                     (run-metadata-proto-state ?proto-state&~?state)
                                     (run-metadata-proto-path ?run-metadata-proto-path&~""))
  =>
-  (bind ?path (proto-path-join ?run-metadata-proto-path "state"))
-  (bind ?s-satisfied-path (proto-path-join ?run-metadata-proto-path "satisfied"))
-  (bind ?s-state ?state)
-  (if (eq ?s-state START) then (bind ?s-state EVALUATING))
-  (run-metadata-proto-update-field ?path ?s-state ?op)
-  (if (eq ?s-state FINISHED)
-   then (run-metadata-proto-update-field ?s-satisfied-path ?satisfied ?op))
   (modify ?cond (run-metadata-proto-state ?state))
+
+  ; START and EVALUATING both map to proto EVALUATING. Only update the run
+  ; metadata and publish an event if the proto-visible state changes.
+  (bind ?s-state (condition-proto-state-from-condition-state ?state))
+  (bind ?previous-s-state
+    (condition-proto-state-from-condition-state ?proto-state))
+  (if (neq ?s-state ?previous-s-state) then
+    (bind ?path (proto-path-join ?run-metadata-proto-path "state"))
+    (run-metadata-proto-update-field ?path ?s-state ?op)
+    (if (eq ?s-state FINISHED) then
+      (bind ?s-satisfied-path
+        (proto-path-join ?run-metadata-proto-path "satisfied"))
+      (run-metadata-proto-update-field ?s-satisfied-path ?satisfied ?op)
+    )
+
+    (operation-events-add-condition-state-change-event ?op ?s-state ?satisfied
+                                                       ?run-metadata-proto-path)
+  )
 )
 
 (defrule behavior-tree-state-proto-update-task-node-action

@@ -92,6 +92,27 @@
 
 )
 
+(deffunction operation-events-add-condition-state-change-event (?operation-name
+               ?proto-state ?satisfied ?run-metadata-proto-path)
+
+  (bind ?event-proto
+    (pb-create "intrinsic_proto.executive.OperationEvent"))
+
+  (bind ?element-path
+    (run-metadata-proto-get-element-path ?run-metadata-proto-path
+                                         ?operation-name))
+  (pb-set-repeated-values ?event-proto "condition_state.element_path.ids"
+                          ?element-path)
+
+
+  (pb-set-field ?event-proto "condition_state.state" ?proto-state)
+  (if (eq ?proto-state FINISHED) then
+    (pb-set-field ?event-proto "condition_state.satisfied" ?satisfied)
+  )
+  (operation-events-add-event ?operation-name ?event-proto)
+
+)
+
 (deffunction operation-events-add-task-node-state-change-event (?operation-name
                ?proto-state ?run-metadata-proto-path)
 
