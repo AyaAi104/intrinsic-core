@@ -24,6 +24,7 @@ go_library(
     deps = [
         ":platform",
         "//intrinsic_sdk/intrinsic/assets/instances/connect",
+        "@com_github_golang_glog//:go_default_library",
         "@intrinsic_apis//intrinsic/assets/data/proto/v1:data_assets_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto:field_metadata_go_proto",
         "@intrinsic_apis//intrinsic/assets/proto/v1:grpc_connection_go_proto",

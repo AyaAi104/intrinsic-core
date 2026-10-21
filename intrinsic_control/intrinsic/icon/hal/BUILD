@@ -319,6 +319,7 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_cc_proto",
         "@intrinsic_apis//intrinsic/icon/hardware_modules/sim_bus:sim_bus_hardware_module_cc_proto",
     ],
     alwayslink = 1,

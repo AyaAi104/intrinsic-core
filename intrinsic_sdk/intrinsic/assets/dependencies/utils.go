@@ -23,6 +23,7 @@ import (
 	"slices"
 	"strings"
 
+	log "github.com/golang/glog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
@@ -53,8 +54,9 @@ var (
 // Connect creates a gRPC connection for communicating with the provider of the specified interface.
 //
 // It also returns a new context that includes any needed metadata for communicating with the
-// provider.
-func Connect(ctx context.Context, dep *rdpb.ResolvedDependency, iface string) (*grpc.ClientConn, context.Context, error) {
+// provider. Insecure transport credentials are configured by default and can be overridden by
+// passing additional grpc.DialOption values in opts.
+func Connect(ctx context.Context, dep *rdpb.ResolvedDependency, iface string, opts ...grpc.DialOption) (*grpc.ClientConn, context.Context, error) {
 	ifaceProto, err := findInterface(dep, iface)
 	if err != nil {
 		return nil, nil, err
@@ -64,22 +66,28 @@ func Connect(ctx context.Context, dep *rdpb.ResolvedDependency, iface string) (*
 		return nil, nil, fmt.Errorf("%w: %q", errNotGRPC, iface)
 	}
 
-	return connect.Connect(ctx, connection)
+	log.InfoContextf(ctx, "Connecting to interface %q", iface)
+	return connect.Connect(ctx, connection, opts...)
 }
 
 
 
-// ConnectWithRuntimeAssetFallbackForAssetMigrationOnly is an internal-only version of Connect.
+// ConnectWithRuntimeAssetFallbackForAssetMigrationOnly is an internal-only version of [Connect].
 //
 // If the interface or its connection details are missing from the resolved dependency,
-// it falls back to using the runtime asset instance connection details.
-func ConnectWithRuntimeAssetFallbackForAssetMigrationOnly(ctx context.Context, dep *rdpb.ResolvedDependency, iface string) (*grpc.ClientConn, context.Context, error) {
+// it falls back to using the runtime asset instance connection details. Insecure transport
+// credentials are configured by default and can be overridden by passing additional
+// grpc.DialOption values in opts.
+func ConnectWithRuntimeAssetFallbackForAssetMigrationOnly(ctx context.Context, dep *rdpb.ResolvedDependency, iface string, opts ...grpc.DialOption) (*grpc.ClientConn, context.Context, error) {
 	// Proceed with the standard Connect if no error occurred and connection info is populated.
 	if ifaceProto, err := findInterface(dep, iface); err == nil && ifaceProto.GetGrpc().GetConnection() != nil {
-		return Connect(ctx, dep, iface)
+		return Connect(ctx, dep, iface, opts...)
 	}
 
-	cloned := proto.Clone(dep).(*rdpb.ResolvedDependency)
+	cloned := proto.CloneOf(dep)
+	if cloned == nil {
+		cloned = &rdpb.ResolvedDependency{}
+	}
 	cloned.Name = platform.RuntimeInstanceName
 	if cloned.Interfaces == nil {
 		cloned.Interfaces = make(map[string]*rdpb.ResolvedDependency_Interface)
@@ -99,7 +107,7 @@ func ConnectWithRuntimeAssetFallbackForAssetMigrationOnly(ctx context.Context, d
 			},
 		},
 	}
-	return Connect(ctx, cloned, iface)
+	return Connect(ctx, cloned, iface, opts...)
 }
 
 
