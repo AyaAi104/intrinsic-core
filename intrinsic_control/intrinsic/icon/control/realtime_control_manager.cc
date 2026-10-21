@@ -355,7 +355,7 @@ void PublishPartStatusesSaveRuntimeSettings(
         (logging_mode == LoggingMode::kFullRate || publish_decimated)) {
       data_logger::LogAsync(log_item, [](absl::Status status) {
         if (!status.ok()) {
-          LOG_EVERY_N_SEC(WARNING, 1)
+          LOG_EVERY_N_SEC(WARNING, 10)
               << "Failed to log robot-status: " << status;
         }
       });

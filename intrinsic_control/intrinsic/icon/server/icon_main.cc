@@ -277,19 +277,21 @@ void InitializeDataLogger(const MainLoopConfiguration& configuration) {
         connect::UnlimitedMessageSizeGrpcChannelArgs());
   }
   if (data_logger_channel.ok()) {
-    if (auto status = intrinsic::connect::WaitForChannelReady(
+    if (absl::Status status = intrinsic::connect::WaitForChannelReady(
             *data_logger_channel,
             absl::GetFlag(FLAGS_grpc_client_connection_timeout));
         !status.ok()) {
-      LOG(ERROR) << "Failed to connect to data logger: " << status;
-    } else {
-      auto data_logger_stub = intrinsic_proto::data_logger::DataLogger::NewStub(
-          *data_logger_channel);
-      if (auto s = intrinsic::data_logger::StartUpIntrinsicLoggerViaStub(
-              std::move(data_logger_stub));
-          !s.ok()) {
-        LOG(ERROR) << "Failed to connect to data logger: " << s;
-      }
+      LOG(WARNING) << "Data logger channel not ready within timeout (" << status
+                   << "); initializing client anyway so gRPC reconnects in the "
+                      "background.";
+    }
+    auto data_logger_stub =
+        intrinsic_proto::data_logger::DataLogger::NewStub(*data_logger_channel);
+    if (absl::Status status =
+            intrinsic::data_logger::StartUpIntrinsicLoggerViaStub(
+                std::move(data_logger_stub));
+        !status.ok()) {
+      LOG(ERROR) << "Failed to initialize data logger client: " << status;
     }
   }
 }

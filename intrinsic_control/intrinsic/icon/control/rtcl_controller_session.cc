@@ -516,7 +516,7 @@ void RtclControllerSession::PublishOutputStreams() {
         if (logging_mode == LoggingMode::kFullRate || log_throttled_cycle) {
           data_logger::LogAsync(log_item, [](absl::Status status) {
             if (!status.ok()) {
-              LOG_EVERY_N_SEC(ERROR, 5)
+              LOG_EVERY_N_SEC(WARNING, 10)
                   << "Failed to log streaming output: " << status;
             }
           });
