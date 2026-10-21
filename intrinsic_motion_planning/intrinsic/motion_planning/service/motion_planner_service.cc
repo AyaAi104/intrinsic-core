@@ -243,14 +243,6 @@ absl::StatusOr<std::unique_ptr<object_world::ObjectWorld>> GetObjectWorldView(
   return object_world;
 }
 
-absl::StatusOr<std::vector<intrinsic_proto::geometry::v1::TransformedGeometry>>
-ComputeSweptVolume(const World& world, const RobotCollectionsEntityId& robot_id,
-                   GeometrySerializer& geolib, const PointPath& path) {
-  return absl::UnimplementedError(
-      "ComputeSweptVolume is "
-      "not implemented.");
-}
-
 PointPath PathSegmentsToPath(const std::vector<PathSegment>& path_segments) {
   PointPath path;
   for (const auto& path_segment : path_segments) {
@@ -265,54 +257,14 @@ PointPath PathSegmentsToPath(const std::vector<PathSegment>& path_segments) {
   return path;
 }
 
-absl::StatusOr<std::vector<intrinsic_proto::geometry::v1::TransformedGeometry>>
-ComputeSweptVolume(const World& world, const RobotCollectionsEntityId& robot_id,
-                   GeometrySerializer& geolib,
-                   const JointTrajectoryPVA& trajectory) {
+// Extracts the joint positions of `trajectory` as a path of configurations.
+PointPath TrajectoryToPointPath(const JointTrajectoryPVA& trajectory) {
   PointPath path;
   path.reserve(trajectory.size());
   for (const JointStatePVA& pva : trajectory.data()) {
     path.push_back(pva.position);
   }
-
-  return ComputeSweptVolume(world, robot_id, geolib, path);
-}
-
-absl::Status ComputeSweptVolumeForPathAndAssignToResponse(
-    const World& world, const RobotCollectionsEntityId& robot_id,
-    GeometrySerializer& geolib, const PointPath& path,
-    intrinsic_proto::motion_planning::v1::PathPlanningResponse* response) {
-  std::vector<intrinsic_proto::geometry::v1::TransformedGeometry> swept_volumes;
-  {
-    const stats::ScopedSpan span("MotionPlannerService/SweptVolume/Compute");
-    INTR_ASSIGN_OR_RETURN(swept_volumes,
-                          ComputeSweptVolume(world, robot_id, geolib, path));
-  }
-
-  const stats::ScopedSpan span("MotionPlannerService/SweptVolume/Serialize");
-  for (auto& swept_volume : swept_volumes) {
-    *response->add_swept_volumes() = std::move(swept_volume);
-  }
-  return absl::OkStatus();
-}
-
-absl::Status ComputeSweptVolumeAndAssignToResponse(
-    const World& world, const RobotCollectionsEntityId& robot_id,
-    GeometrySerializer& geolib, const JointTrajectoryPVA& trajectory,
-    intrinsic_proto::motion_planning::v1::TrajectoryPlanningResponse*
-        response) {
-  std::vector<intrinsic_proto::geometry::v1::TransformedGeometry> swept_volumes;
-  {
-    const stats::ScopedSpan span("MotionPlannerService/SweptVolume/Compute");
-    INTR_ASSIGN_OR_RETURN(
-        swept_volumes, ComputeSweptVolume(world, robot_id, geolib, trajectory));
-  }
-
-  const stats::ScopedSpan span("MotionPlannerService/SweptVolume/Serialize");
-  for (auto& swept_volume : swept_volumes) {
-    *response->add_swept_volumes() = std::move(swept_volume);
-  }
-  return absl::OkStatus();
+  return path;
 }
 
 // Inserts the given result into the cache if the cache is not null and the
@@ -549,6 +501,17 @@ MotionPlannerService::MotionPlannerService(
         });
   }
 }
+absl::Status MotionPlannerService::ComputeSweptVolumeAndAssignToResponse(
+    const World& world, const RobotCollectionsEntityId& robot_id,
+    const std::vector<eigenmath::VectorXd>& path,
+    google::protobuf::RepeatedPtrField<
+        intrinsic_proto::geometry::v1::TransformedGeometry>*
+        swept_volumes_out) {
+  return absl::UnimplementedError(
+      "ComputeSweptVolume is "
+      "not implemented.");
+}
+
 absl::Status
 MotionPlannerService::ConvertPlanTrajectoryResultToTrajectoryPlanningResponse(
     const MotionPlanner::PlanTrajectoryResult& plan_trajectory_result,
@@ -576,8 +539,8 @@ MotionPlannerService::ConvertPlanTrajectoryResultToTrajectoryPlanningResponse(
   if (request.compute_swept_volume()) {
     INTR_RETURN_IF_ERROR(ComputeSweptVolumeAndAssignToResponse(
         initial_world, robot.GetRobotEntityId(),
-        geometry_library_->Serializer(), plan_trajectory_result.trajectory,
-        &response));
+        TrajectoryToPointPath(plan_trajectory_result.trajectory),
+        response.mutable_swept_volumes()));
   }
   return absl::OkStatus();
 }
@@ -850,9 +813,9 @@ MotionPlannerService::ConvertPlanTrajectoryResultToTrajectoryPlanningResponse(
     *response->mutable_path() = path_proto;
     // Calculate and fill in the swept volume
     if (request->compute_swept_volume()) {
-      INTR_RETURN_IF_ERROR_GRPC(ComputeSweptVolumeForPathAndAssignToResponse(
-          initial_world_and_proto.world, robot->GetRobotEntityId(),
-          geometry_library_->Serializer(), path, response));
+      INTR_RETURN_IF_ERROR_GRPC(ComputeSweptVolumeAndAssignToResponse(
+          initial_world_and_proto.world, robot->GetRobotEntityId(), path,
+          response->mutable_swept_volumes()));
     }
   }
 

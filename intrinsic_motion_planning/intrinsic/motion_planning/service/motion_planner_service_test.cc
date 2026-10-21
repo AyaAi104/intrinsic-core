@@ -94,6 +94,7 @@
 #include "intrinsic/world/component/robot_component.h"
 #include "intrinsic/world/entity.h"
 #include "intrinsic/world/entity_id.h"
+#include "intrinsic/world/geometry_types.h"
 #include "intrinsic/world/gzfile/gzfile.h"
 #include "intrinsic/world/hashing/hashing.h"
 #include "intrinsic/world/objects/kinematic_object_internal.h"
@@ -1899,4 +1900,5 @@ INSTANTIATE_TEST_SUITE_P(
     });
 
 }  // namespace
+
 }  // namespace intrinsic
