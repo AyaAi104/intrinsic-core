@@ -224,8 +224,8 @@ proto_library(
     name = "geometric_resource_data_proto",
     srcs = ["geometric_resource_data.proto"],
     deps = [
-        "//intrinsic/world/proto:object_world_updates_proto",
         "//intrinsic/world/proto:world_fragment_proto",
+        "//intrinsic_sdk/intrinsic/world/proto:object_world_updates_proto",
         "@com_google_protobuf//:any_proto",
         "@intrinsic_apis//intrinsic/scene/proto/v1:scene_object_config_proto",
         "@intrinsic_apis//intrinsic/scene/proto/v1:scene_object_proto",
@@ -237,8 +237,8 @@ go_proto_library(
     importpath = "intrinsic/resources/proto/geometric_resource_data_go_proto",
     protos = [":geometric_resource_data_proto"],
     deps = [
-        "//intrinsic/world/proto:object_world_updates_go_proto",
         "//intrinsic/world/proto:world_fragment_go_proto",
+        "//intrinsic_sdk/intrinsic/world/proto:object_world_updates_go_proto",
         "@intrinsic_apis//intrinsic/scene/proto/v1:scene_object_config_go_proto",
         "@intrinsic_apis//intrinsic/scene/proto/v1:scene_object_go_proto",
     ],

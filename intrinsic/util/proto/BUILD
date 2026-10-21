@@ -72,12 +72,6 @@ cc_library(
 )
 
 alias(
-    name = "protoio",
-    actual = "//intrinsic_sdk/intrinsic/util/proto:protoio",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-)
-
-alias(
     name = "type_url",
     actual = "//intrinsic_sdk/intrinsic/util/proto:type_url",
     tags = ["go/intrinsic-ioc-transition-tdd"],

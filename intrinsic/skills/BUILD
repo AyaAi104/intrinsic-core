@@ -45,17 +45,3 @@ cc_library(
         "@intrinsic_apis//intrinsic/skills/proto:footprint_cc_proto",
     ],
 )
-
-alias(
-    name = "skillvalidate",
-    actual = "//intrinsic_sdk/intrinsic/skills:skillvalidate",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:public_api_users"],
-)
-
-alias(
-    name = "skillfix",
-    actual = "//intrinsic_sdk/intrinsic/skills:skillfix",
-    tags = ["go/intrinsic-ioc-transition-tdd"],
-    visibility = ["//intrinsic:internal_api_users"],
-)

@@ -31,7 +31,7 @@ go_binary(
     importpath = "intrinsic/resources/noop",
     deps = [
         "//intrinsic/kubernetes:intrinsic",
-        "//intrinsic/util/proto:protoio",
+        "//intrinsic_sdk/intrinsic/util/proto:protoio",
         "@com_github_golang_glog//:go_default_library",
         "@intrinsic_apis//intrinsic/assets/services/proto/v1:dynamic_reconfiguration_go_proto",
         "@intrinsic_apis//intrinsic/resources/proto:runtime_context_go_proto",
@@ -58,10 +58,10 @@ go_library(
     deps = [
         "//intrinsic/assets/proto:installation_origin_go_proto",
         "//intrinsic/resources/proto:resource_type_runtime_go_proto",
-        "//intrinsic/skills:skillfix",
         "//intrinsic/util/proto:descriptorcompatibility",
         "//intrinsic_sdk/intrinsic/assets/data:datafix",
         "//intrinsic_sdk/intrinsic/assets/processes:processfix",
+        "//intrinsic_sdk/intrinsic/skills:skillfix",
         "@intrinsic_apis//intrinsic/assets/proto:metadata_go_proto",
         "@intrinsic_apis//intrinsic/assets/services/proto/v1:dynamic_reconfiguration_go_proto",
         "@intrinsic_apis//intrinsic/assets/services/proto/v1:service_state_go_proto",
@@ -78,7 +78,6 @@ go_library(
     deps = [
         "//intrinsic/assets/conversion:runtime",
         "//intrinsic/resources/proto:resource_type_runtime_go_proto",
-        "//intrinsic/skills:skillvalidate",
         "//intrinsic_sdk/intrinsic/assets:assetvalidate",
         "//intrinsic_sdk/intrinsic/assets:metadatautils",
         "//intrinsic_sdk/intrinsic/assets/data:datavalidate",
@@ -88,5 +87,6 @@ go_library(
         "//intrinsic_sdk/intrinsic/assets/proto/v1:asset_go_proto",
         "//intrinsic_sdk/intrinsic/assets/scene_objects:sceneobjectvalidate",
         "//intrinsic_sdk/intrinsic/assets/services:servicevalidate",
+        "//intrinsic_sdk/intrinsic/skills:skillvalidate",
     ],
 )
