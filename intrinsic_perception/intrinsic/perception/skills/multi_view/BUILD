@@ -29,6 +29,8 @@ proto_library(
     name = "estimate_pose_multi_view_proto",
     srcs = ["estimate_pose_multi_view.proto"],
     deps = [
+        "@intrinsic_apis//intrinsic/assets/proto:field_metadata_proto",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_proto",
         "@intrinsic_apis//intrinsic/geometry/proto:oriented_bounding_box_proto",
         "@intrinsic_apis//intrinsic/math/proto:pose_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:capture_data_proto",
@@ -48,6 +50,8 @@ go_proto_library(
     importpath = "intrinsic/perception/skills/multi_view/estimate_pose_multi_view_go_proto",
     proto = ":estimate_pose_multi_view_proto",
     deps = [
+        "@intrinsic_apis//intrinsic/assets/proto:field_metadata_go_proto",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_go_proto",
         "@intrinsic_apis//intrinsic/geometry/proto:oriented_bounding_box_go_proto",
         "@intrinsic_apis//intrinsic/math/proto:pose_go_proto",
         "@intrinsic_apis//intrinsic/perception/proto/v1:capture_data_go_proto",
@@ -85,7 +89,6 @@ py_library(
 skill_manifest(
     name = "estimate_pose_multi_view_manifest",
     src = "estimate_pose_multi_view_manifest.textproto",
-    incompatible_disallow_manifest_dependencies = False,
     deps = [":estimate_pose_multi_view_proto"],
 )
 

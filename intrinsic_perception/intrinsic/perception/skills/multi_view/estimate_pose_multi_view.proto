@@ -16,6 +16,8 @@ syntax = "proto3";
 
 package intrinsic_proto.skills;
 
+import "intrinsic/assets/proto/field_metadata.proto";
+import "intrinsic/assets/proto/v1/resolved_dependency.proto";
 import "intrinsic/geometry/proto/oriented_bounding_box.proto";
 import "intrinsic/math/proto/pose.proto";
 import "intrinsic/perception/proto/v1/capture_data.proto";
@@ -75,6 +77,13 @@ message RegionOfInterest {
 }
 
 message EstimatePoseMultiViewParams {
+  // Service that can be used to run pose estimation.
+  intrinsic_proto.assets.v1.ResolvedDependency perception = 12
+      [(intrinsic_proto.assets.field_metadata).dependency = {
+        requires: "grpc://intrinsic_proto.perception.v1.PoseEstimationService",
+        skill_annotations: { fallback_manifest_dependency_key: "perception" }
+      }];
+
   // Id of the pose estimator.
   perception.v1.PoseEstimatorId pose_estimator = 1;
 

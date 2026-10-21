@@ -117,14 +117,6 @@ options {
     create_skill: "intrinsic.perception.skills.multi_view.estimate_pose_multi_view.EstimatePoseMultiView"
   }
 }
-dependencies {
-  required_equipment {
-    key: "perception"
-    value {
-      capability_names: "intrinsic_proto.perception.v1.PoseEstimationService"
-    }
-  }
-}
 parameter {
   message_full_name: "intrinsic_proto.skills.EstimatePoseMultiViewParams"
   default_value: {

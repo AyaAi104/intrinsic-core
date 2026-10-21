@@ -46,8 +46,6 @@ from intrinsic.world.python import object_world_ids
 from intrinsic.world.python import object_world_resources
 from intrinsic.world.python.object_world_client import ObjectWorldClient
 
-PERCEPTION_SLOT = "perception"
-
 
 
 def _populate_return_value(
@@ -156,17 +154,15 @@ class EstimatePoseMultiView(skl.Skill):
           "No capture_data found. Please provide capture_data."
       )
 
-    perception_service_connection_info = context.resource_handles[
-        PERCEPTION_SLOT
-    ].connection_info
-
     if request.params.update_object_pose.update_pose:
       logging.info(request.params.update_object_pose.object_to_update)
 
     # Establish communication channel
-    channel = pose_estimation_client_utils.create_channel(
-        connection_info=perception_service_connection_info,
-        data_logger_context=context.logging_context.data_logger_context,
+    channel = (
+        pose_estimation_client_utils.create_channel_from_resolved_dependency(
+            dep=request.params.perception,
+            data_logger_context=context.logging_context.data_logger_context,
+        )
     )
     client = (
         pose_estimation_service_client.PoseEstimationServiceClient.from_channel(
