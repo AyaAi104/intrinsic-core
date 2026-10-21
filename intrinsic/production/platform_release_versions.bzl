@@ -15,7 +15,6 @@
 """
 References to the current platform release versions.
 "nightly" refers to the latest release via the autopush rollout group.
-"prod" refers to the latest release via the prod rollout group.
 
 Usage of these references on the release branches is not recommended since
 any change to these contents would require creating another release
@@ -30,8 +29,3 @@ https://github.com/intrinsic-ai/intrinsic-core/blob/b6962e49811f366faa8ea815bfa8
 # TODO(b/424923989): when this is updated nightly remove the warning not to
 # rely on it being update to date.
 PLATFORM_RELEASE_NIGHTLY = "0.20261020.0-RC00"
-
-# WARNING: This string is currently updated manually by the RelEng team. It
-# may not represent the absolute most recent prod release and is only
-# maintained at head and not on Rapid release branches themselves.
-PLATFORM_RELEASE_PROD = "intrinsic.platform.20260720.RC09"
