@@ -619,12 +619,20 @@ absl::Status WorldObject::ApplyGeometryOptionOverrides(
 
 absl::Status WorldObject::ApplyUserData(
     const intrinsic_proto::world::UpdateUserData& update) {
+  const std::optional<CollectionsEntityId> collection_entity_id =
+      GetCollectionEntity();
+  if (!collection_entity_id.has_value()) {
+    return absl::FailedPreconditionError(absl::Substitute(
+        "Object with name \"$0\" has no collection entity and thus cannot "
+        "have any user data associated with it.",
+        GetName().value()));
+  }
   INTR_ASSIGN_OR_RETURN(auto* entity_world, GetMutableEntityWorld());
 
   INTR_ASSIGN_OR_RETURN(
       auto* user_data_component,
       entity_world->GetOrCreateComponentByEntityId<UserDataComponent>(
-          *GetCollectionEntity()));
+          *collection_entity_id));
   INTR_ASSIGN_OR_RETURN(auto user_data_proto, user_data_component->ToProto());
   INTR_ASSIGN_OR_RETURN(const auto policy,
                         ToSceneObjectUserDataPolicy(update.policy()));
