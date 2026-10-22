@@ -211,7 +211,7 @@ up-aries==0.5.0
 urllib3==2.5.0
 uvicorn==0.50.2
 waitress==3.0.2
-warp-lang==1.0.0
+warp-lang==1.17.0
 wasmtime==47.0.1
 yamllint==1.37.1
 
