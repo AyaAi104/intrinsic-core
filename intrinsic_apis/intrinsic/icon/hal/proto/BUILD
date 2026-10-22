@@ -23,6 +23,7 @@ proto_library(
         "@com_google_protobuf//:any_proto",
         "@intrinsic_apis//intrinsic/assets/proto:field_metadata_proto",
         "@intrinsic_apis//intrinsic/assets/proto/v1:resolved_dependency_proto",
+        "@intrinsic_apis//intrinsic/icon/hardware_modules/common:payload_schedule_config_proto",
         "@intrinsic_apis//intrinsic/icon/hardware_modules/sim_bus:sim_bus_hardware_module_proto",
     ],
 )
