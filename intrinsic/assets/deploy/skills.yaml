@@ -65,6 +65,13 @@ spec:
             # Avoid C-ARES flakiness: b/373783242
             - name: GRPC_DNS_RESOLVER
               value: native
+            # Set to "poll" as the default showed sporadic failures every few
+            # thousand calls. With "poll" process executions run for >1,000,000
+            # skill executions.
+            # TODO(b/576245575): Reconsider using the default poll strategy once
+            # its instability is understood and fixed.
+            - name: GRPC_POLL_STRATEGY
+              value: poll
         {{- end }}
       {{- if .image_pull_secrets }}
       imagePullSecrets:
