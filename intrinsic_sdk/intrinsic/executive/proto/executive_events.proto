@@ -40,6 +40,9 @@ message NodeStateChangeEvent {
   // The recovered flag from BehaviorTree.Node. Usually true, when a state
   // change originated from recovery
   bool recovered = 3;
+  // The failure_reason from BehaviorTree.Node. Set when the node has a known
+  // failure reason.
+  optional BehaviorTree.Node.FailureReason failure_reason = 4;
 }
 
 message ConditionStateChangeEvent {

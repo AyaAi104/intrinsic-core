@@ -261,6 +261,7 @@
   )
 
   (bind ?s-fr-path (proto-path-join ?run-metadata-proto-path "failure_reason"))
+  (bind ?s-fr-state nil)
   (if (neq ?failure-reason UNKNOWN)
     then
       (bind ?s-fr-state (sym-cat (str-cat "FAILED_" ?failure-reason)))
@@ -273,6 +274,7 @@
                 (run-metadata-proto-recovered-state ?run-metadata-proto-recovered-state))
 
   (operation-events-add-node-state-change-event ?op ?s-state ?was-recovered
+                                                ?s-fr-state
                                                 ?run-metadata-proto-path)
 )
 

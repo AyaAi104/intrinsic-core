@@ -74,7 +74,8 @@
 )
 
 (deffunction operation-events-add-node-state-change-event (?operation-name
-               ?proto-state ?was-recovered ?run-metadata-proto-path)
+               ?proto-state ?was-recovered ?failure-reason
+               ?run-metadata-proto-path)
 
   (bind ?event-proto
     (pb-create "intrinsic_proto.executive.OperationEvent"))
@@ -88,6 +89,9 @@
 
   (pb-set-field ?event-proto "node_state.state" ?proto-state)
   (pb-set-field ?event-proto "node_state.recovered" ?was-recovered)
+  (if (neq ?failure-reason nil) then
+    (pb-set-field ?event-proto "node_state.failure_reason" ?failure-reason)
+  )
   (operation-events-add-event ?operation-name ?event-proto)
 
 )
