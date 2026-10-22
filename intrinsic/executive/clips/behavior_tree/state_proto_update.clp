@@ -260,10 +260,13 @@
     )
   )
 
-  (if (neq ?failure-reason UNKNOWN) then
-    (bind ?s-fr-path (proto-path-join ?run-metadata-proto-path "failure_reason"))
-    (bind ?s-fr-state (sym-cat (str-cat "FAILED_" ?failure-reason)))
-    (run-metadata-proto-update-field ?s-fr-path ?s-fr-state ?op)
+  (bind ?s-fr-path (proto-path-join ?run-metadata-proto-path "failure_reason"))
+  (if (neq ?failure-reason UNKNOWN)
+    then
+      (bind ?s-fr-state (sym-cat (str-cat "FAILED_" ?failure-reason)))
+      (run-metadata-proto-update-field ?s-fr-path ?s-fr-state ?op)
+    else
+      (run-metadata-proto-clear-field ?s-fr-path ?op)
   )
 
   (modify ?node (run-metadata-proto-state ?state)

@@ -1049,6 +1049,8 @@
                 (task-action-uid nil)
                 (breakpoint-triggered FALSE)
                 (stepwise-state NONE)
+                (failure-reason UNKNOWN)
+                (failure-message "")
                 (extended-status-proto-id 0))
 
   (if ?reset-child-nodes then
