@@ -14,7 +14,6 @@
 
 #include "intrinsic/icon/utils/malloc_guard.h"
 
-#include <asm/unistd_64.h>
 #include <dlfcn.h>
 #include <execinfo.h>
 #include <link.h>
