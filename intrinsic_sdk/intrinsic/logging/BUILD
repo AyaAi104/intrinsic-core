@@ -49,6 +49,7 @@ cc_library(
         "//intrinsic_sdk/intrinsic/logging/proto:logger_service_cc_grpc",
         "//intrinsic_sdk/intrinsic/logging/proto:logger_service_cc_proto",
         "//intrinsic_sdk/intrinsic/util:proto_time",
+        "//intrinsic_sdk/intrinsic/util/grpc",
         "//intrinsic_sdk/intrinsic/util/status:status_conversion_grpc",
         "//intrinsic_sdk/intrinsic/util/status:status_macros",
         "//intrinsic_sdk/intrinsic/util/status:status_macros_grpc",
