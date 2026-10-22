@@ -269,7 +269,7 @@ _FOUNDATIONSTEREO_VERSION = "tao-deployable-s-dynamic-v2.0"
 
 # LINT.IfChange(sam3_version)
 # Pinned upstream SAM 3 commit used to export the ONNX graphs.
-_SAM3_VERSION = "sam3-96914d2425f90a64f45ca977c2b5165418099543"
+_SAM3_VERSION = "sam3-608457d816009fc369a02c692f27efdd7256b442"
 # LINT.ThenChange(//intrinsic_perception/intrinsic/perception/service/nvidia_pose_estimator/scripts/prepare_sam3_models.sh:sam3_commit)
 
 perception_model_data_asset(

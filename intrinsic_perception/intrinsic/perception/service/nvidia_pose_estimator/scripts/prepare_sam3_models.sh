@@ -51,9 +51,9 @@ SAM3_REPO_ID="facebook/sam3"
 SAM3_FILENAME="sam3.pt"
 SAM3_EXPECTED_SHA256="9999e2341ceef5e136daa386eecb55cb414446a00ac2b55eb2dfd2f7c3cf8c9e"
 # LINT.IfChange(sam3_commit)
-SAM3_GIT_COMMIT="96914d2425f90a64f45ca977c2b5165418099543"
+SAM3_GIT_COMMIT="608457d816009fc369a02c692f27efdd7256b442"
 # LINT.ThenChange(//intrinsic_perception/intrinsic/perception/service/nvidia_pose_estimator/BUILD:sam3_version)
-PIPELINE_GIT_COMMIT="4d79cf040a981d9375f1e8c8b0d71306b968ed67"
+PIPELINE_GIT_COMMIT="816eaee5f9402c26e1527d0a063e59e1f6888523"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -107,10 +107,9 @@ if [[ "${FORCE}" -eq 0 ]]; then
   fi
 fi
 
-# 2. Check for CUDA GPU (required by upstream SAM 3 position encoding cache during export)
+# 2. Check for CUDA GPU (optional; falls back to CPU export when no GPU is detected)
 if ! command -v nvidia-smi >/dev/null 2>&1 || ! nvidia-smi -L >/dev/null 2>&1; then
-  echo "❌ Error: A CUDA-capable GPU is required to export SAM 3 models to ONNX." >&2
-  exit 1
+  echo "ℹ No local CUDA GPU detected; SAM 3 ONNX export will run on CPU."
 fi
 
 # 3. Check HuggingFace authentication

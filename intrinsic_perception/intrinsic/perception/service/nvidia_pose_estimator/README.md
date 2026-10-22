@@ -45,7 +45,7 @@ the details if you need them; you do not need them to build or deploy.
 
 `facebook/sam3` is gated (`gated: "manual"`), so a build cannot fetch it. Accept the Meta SAM
 License on [HuggingFace](https://huggingface.co/facebook/sam3), authenticate locally
-(`hf auth login`), then run on a **GPU** machine:
+(`hf auth login`), then run (uses a local CUDA GPU if available, otherwise exports on CPU):
 
 ```bash
 ./intrinsic_perception/intrinsic/perception/service/nvidia_pose_estimator/scripts/prepare_sam3_models.sh
