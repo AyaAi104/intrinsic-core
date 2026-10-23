@@ -29,8 +29,9 @@ documentation {
     "Attaches, or connects, an object to a gripper in the object"
     "world.\n\n"
     "Executing this skill will rigidly attach the object to the gripper in "
-    "the object world and disable collision checking between the gripper and the object. "
-    "The object will move with the robot.\n\n"
+    "the object world and disable collision checking between the gripper and the object "
+    "(when attaching directly to a robot arm, collisions are only disabled with the arm's "
+    "final link). The object will move with the robot.\n\n"
     "This skill will not physically grasp the object in full physics simulation "
     "or when running on hardware."
 }

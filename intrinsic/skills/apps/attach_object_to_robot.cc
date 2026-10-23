@@ -54,6 +54,20 @@ world::ObjectEntityFilter GetAttachmentEntityFilter(
   return world::ObjectEntityFilter().IncludeBaseEntity();
 }
 
+// Returns the entity filter to use when disabling collisions between an
+// attached object and `gripper`. If `gripper` is a robot arm, disable
+// collisions only with its final entity (the flange) so self-collisions with
+// the rest of the arm remain enabled. Otherwise (e.g., for grippers), disable
+// collisions with all of its entities (including articulated fingers or
+// prismatic links).
+world::ObjectEntityFilter GetCollisionExclusionEntityFilter(
+    const world::WorldObject& gripper) {
+  if (GetAttachmentEntityFilter(gripper).IncludesFinalEntity()) {
+    return world::ObjectEntityFilter().IncludeFinalEntity();
+  }
+  return world::ObjectEntityFilter().IncludeAllEntities();
+}
+
 }  // namespace
 
 std::unique_ptr<SkillInterface> AttachObjectToRobotSkill::CreateSkill() {
@@ -96,7 +110,9 @@ AttachObjectToRobotSkill::ExecuteImpl(
 
   INTR_RETURN_IF_ERROR(world.ReparentObject(
       object, gripper, GetAttachmentEntityFilter(gripper)));
-  INTR_RETURN_IF_ERROR(world.DisableCollisions(object, gripper));
+  INTR_RETURN_IF_ERROR(world.DisableCollisions(
+      object, world::ObjectEntityFilter().IncludeAllEntities(), gripper,
+      GetCollisionExclusionEntityFilter(gripper)));
 
   if (params.has_gripper_t_object()) {
     INTR_ASSIGN_OR_RETURN(Pose3d gripper_t_object,
@@ -156,7 +172,7 @@ AttachObjectToRobotSkill::Preview(const PreviewRequest& request,
           world::ObjectEntityFilter().IncludeAllEntities());
   *toggle_collisions->mutable_object_b() =
       gripper.ObjectReferenceWithEntityFilter(
-          world::ObjectEntityFilter().IncludeAllEntities());
+          GetCollisionExclusionEntityFilter(gripper));
   INTR_RETURN_IF_ERROR(context.RecordWorldUpdate(
       collision_update, absl::ZeroDuration(), absl::ZeroDuration()));
 
