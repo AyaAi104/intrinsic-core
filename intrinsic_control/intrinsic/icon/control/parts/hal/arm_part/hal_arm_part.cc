@@ -575,8 +575,8 @@ absl::StatusOr<PartPtrAndGenericConfig> HalArmPart::FromProto(
       context.context.GetServiceOrNull<KinematicsService>();
   if (!context.hardware_resource_name.empty()) {
     if (kinematics_service_ptr == nullptr) {
-      LOG(INFO) << "HalArmPart: There is no kinematics service. This is "
-                   "unusual, maybe there is a configuration error?";
+      LOG(ERROR) << "HalArmPart: There is no kinematics service. This is "
+                    "unusual, maybe there is a configuration error?";
     } else {
       absl::StatusOr<KinematicsInterfaces> kinematics_interfaces =
           GetKinematicsInterfaces(*kinematics_service_ptr,
