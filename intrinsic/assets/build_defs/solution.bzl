@@ -189,7 +189,7 @@ intrinsic_solution = rule(
             doc = "Updates on the used world.",
         ),
         "_localsolutiongen": attr.label(
-            default = Label("//intrinsic/assets/build_defs:localsolutiongen"),
+            default = Label("//intrinsic_sdk/intrinsic/assets/build_defs:localsolutiongen"),
             cfg = "exec",
             executable = True,
         ),

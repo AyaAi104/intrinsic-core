@@ -24,40 +24,6 @@ alias(
     tags = ["go/intrinsic-ioc-transition-tdd"],
 )
 
-go_binary(
-    name = "localsolutiongen",
-    srcs = ["localsolutiongen.go"],
-    importpath = "intrinsic/assets/build_defs/localsolutiongen",
-    deps = [
-        ":asset_go_proto",
-        ":localsolution",
-        "//intrinsic_sdk/intrinsic/production:intrinsic",
-        "//intrinsic_sdk/intrinsic/util:flag",
-        "//intrinsic_sdk/intrinsic/util/proto:protoio",
-        "//intrinsic_sdk/intrinsic/world/proto:object_world_updates_go_proto",
-        "@com_github_golang_glog//:go_default_library",
-        "@intrinsic_apis//intrinsic/config/proto:operation_mode_go_proto",
-        "@org_golang_google_protobuf//reflect/protoregistry:go_default_library",
-    ],
-)
-
-go_library(
-    name = "localsolution",
-    srcs = ["localsolution.go"],
-    importpath = "intrinsic/assets/build_defs/localsolution",
-    deps = [
-        ":asset_go_proto",
-        "//intrinsic_sdk/intrinsic/assets:idutils",
-        "//intrinsic_sdk/intrinsic/util/proto:protoio",
-        "//intrinsic_sdk/intrinsic/util/proto:registryutil",
-        "//intrinsic_sdk/intrinsic/world/proto:object_world_updates_go_proto",
-        "@intrinsic_apis//intrinsic/assets/proto/v1:instance_config_go_proto",
-        "@intrinsic_apis//intrinsic/config/proto:operation_mode_go_proto",
-        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
-        "@org_golang_google_protobuf//reflect/protoregistry:go_default_library",
-    ],
-)
-
 go_library(
     name = "cascopyprocessor",
     srcs = ["cascopyprocessor.go"],
