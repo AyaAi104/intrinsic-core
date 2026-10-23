@@ -16,8 +16,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <sdf version='1.10' xmlns:xacro='http://www.ros.org/wiki/xacro' xmlns:intrinsic='https://intrinsic.ai/'>
+  <!--
+    Base macro for the Universal Robots UR5e model.
+    Default parameter values match the canonical Intrinsic UR5e configuration:
+      - shoulder_pan_yaw (pi): Rotates the base shoulder pan joint by 180 deg around Z to match the canonical UR base frame convention.
+      - wrist_3_pitch (pi): Rotates wrist_3_joint by 180 deg around Y to match the canonical UR tool0/flange orientation.
+      - include_ft_sensor (true): Attaches the internal force/torque sensor (InternalForceTorqueSensor) on wrist_3_joint.
+      - include_power_cable_visual (true): Adds the wrist power cable cylinder visual on base_link.
+    Non-default test worlds (such as ur5e_non_intrinsic_default.sdf.xacro) override these to 0/false to preserve legacy URDF frame orientations and entity IDs.
+  -->
   <xacro:macro  name='ur5e_base_sdf'
                        params='name
+                       shoulder_pan_yaw:=3.1415926535895871
+                       wrist_3_pitch:=3.14159265359
+                       include_ft_sensor:=true
+                       include_power_cable_visual:=true
                        **model_options'>
 
   <model name='${name}'>
@@ -58,22 +71,24 @@ limitations under the License.
           </mesh>
         </geometry>
       </visual>
-      <visual name='base_link_power_cable_visual'>
-        <pose degrees='true'>0 0.075 0.008 90 0 0</pose>
-        <geometry>
-          <cylinder>
-            <length>0.040</length>
-            <radius>0.006</radius>
-          </cylinder>
-        </geometry>
-        <material>
-          <ambient>0.1 0.1 0.1 1</ambient>
-          <diffuse>0.1 0.1 0.1 1</diffuse>
-        </material>
-      </visual>
+      <xacro:if value="${include_power_cable_visual}">
+        <visual name='base_link_power_cable_visual'>
+          <pose degrees='true'>0 0.075 0.008 90 0 0</pose>
+          <geometry>
+            <cylinder>
+              <length>0.040</length>
+              <radius>0.006</radius>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.1 0.1 0.1 1</ambient>
+            <diffuse>0.1 0.1 0.1 1</diffuse>
+          </material>
+        </visual>
+      </xacro:if>
     </link>
     <joint name='shoulder_pan_joint' type='revolute'>
-      <pose relative_to='base_link'>0 0 0.16250000000000001 0 0 3.1415926535895871</pose>
+      <pose relative_to='base_link'>0 0 0.16250000000000001 0 0 ${shoulder_pan_yaw}</pose>
       <parent>base_link</parent>
       <child>shoulder_link</child>
       <axis>
@@ -328,60 +343,62 @@ limitations under the License.
       </visual>
     </link>
     <joint name='wrist_3_joint' type='revolute'>
-      <pose relative_to='wrist_2_link'>0 0.0996 0 -1.57079632679 3.14159265359 0</pose>
+      <pose relative_to='wrist_2_link'>0 0.0996 0 -1.57079632679 ${wrist_3_pitch} 0</pose>
       <parent>wrist_2_link</parent>
       <child>wrist_3_link</child>
-      <!-- Putting this on a fixed joint would be more accurate, but also
-           more invasive to the model. -->
-      <sensor name='InternalForceTorqueSensor' type='force_torque'>
-        <topic>/internal/wrench</topic>
-        <always_on>true</always_on>
-        <visualize>true</visualize>
-        <force_torque>
-          <frame>child</frame>
-          <!-- Noise values taken from ATI Mini 45, probably not right -->
-          <force>
-            <x>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>0.2</stddev>
-              </noise>
-            </x>
-            <y>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>0.2</stddev>
-              </noise>
-            </y>
-            <z>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>0.2</stddev>
-              </noise>
-            </z>
-          </force>
-          <torque>
-            <x>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>0.05</stddev>
-              </noise>
-            </x>
-            <y>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>0.05</stddev>
-              </noise>
-            </y>
-            <z>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>0.05</stddev>
-              </noise>
-            </z>
-          </torque>
-        </force_torque>
-      </sensor>
+      <xacro:if value="${include_ft_sensor}">
+        <!-- Putting this on a fixed joint would be more accurate, but also
+             more invasive to the model. -->
+        <sensor name='InternalForceTorqueSensor' type='force_torque'>
+          <topic>/internal/wrench</topic>
+          <always_on>true</always_on>
+          <visualize>true</visualize>
+          <force_torque>
+            <frame>child</frame>
+            <!-- Noise values taken from ATI Mini 45, probably not right -->
+            <force>
+              <x>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>0.2</stddev>
+                </noise>
+              </x>
+              <y>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>0.2</stddev>
+                </noise>
+              </y>
+              <z>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>0.2</stddev>
+                </noise>
+              </z>
+            </force>
+            <torque>
+              <x>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>0.05</stddev>
+                </noise>
+              </x>
+              <y>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>0.05</stddev>
+                </noise>
+              </y>
+              <z>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>0.05</stddev>
+                </noise>
+              </z>
+            </torque>
+          </force_torque>
+        </sensor>
+      </xacro:if>
       <axis>
         <xyz>0 0 1</xyz>
         <limit>

@@ -69,6 +69,7 @@ filegroup(
         "ur5e/ur5e_base.xacro",
         ":plugins",
     ],
+    visibility = ["//intrinsic/skills/apps/test_data:__pkg__"],
 )
 
 xacro_file(
@@ -76,7 +77,6 @@ xacro_file(
     src = "ur5e/ur5e_world.sdf.xacro",
     out = "ur5e_world.sdf",
     data = [":ur5e"],
-    visibility = ["//visibility:private"],
 )
 
 sdf_scene_object(
@@ -112,7 +112,6 @@ xacro_file(
     src = "ur10e/ur10e.sdf.xacro",
     out = "ur10e_world.sdf",
     data = [":ur10e"],
-    visibility = ["//visibility:private"],
 )
 
 sdf_scene_object(
