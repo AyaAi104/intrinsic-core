@@ -29,7 +29,7 @@ filegroup(
 )
 
 filegroup(
-    name = "lr_10ia_10_data",
+    name = "lr_10ia_10",
     srcs = [
         "lr_10ia_10/lr_10ia_10.sdf.xacro",
         "lr_10ia_10/lr_10ia_10.xacro",
@@ -39,7 +39,7 @@ filegroup(
 )
 
 filegroup(
-    name = "crx_10ia_data",
+    name = "crx_10ia",
     srcs = [
         "crx_10ia/crx_10ia.sdf.xacro",
         "crx_10ia/crx_10ia.xacro",
@@ -49,7 +49,7 @@ filegroup(
 )
 
 filegroup(
-    name = "crx_10ia_l_data",
+    name = "crx_10ia_l",
     srcs = [
         "crx_10ia_l/crx_10ia_l.sdf.xacro",
         "crx_10ia_l/crx_10ia_l.xacro",
@@ -59,7 +59,7 @@ filegroup(
 )
 
 filegroup(
-    name = "crx_20ia_l_data",
+    name = "crx_20ia_l",
     srcs = [
         "crx_20ia_l/crx_20ia_l.sdf.xacro",
         "crx_20ia_l/crx_20ia_l.xacro",
@@ -69,7 +69,7 @@ filegroup(
 )
 
 filegroup(
-    name = "crx_30ia_data",
+    name = "crx_30ia",
     srcs = [
         "crx_30ia/crx_30ia.sdf.xacro",
         "crx_30ia/crx_30ia.xacro",
@@ -79,7 +79,7 @@ filegroup(
 )
 
 filegroup(
-    name = "lr_mate_200id_7l_data",
+    name = "lr_mate_200id_7l",
     srcs = [
         "lr_mate_200id_7l/lr_mate_200id_7l.sdf.xacro",
         "lr_mate_200id_7l/lr_mate_200id_7l.xacro",
@@ -89,7 +89,7 @@ filegroup(
 )
 
 filegroup(
-    name = "lr_mate_200id_4s_data",
+    name = "lr_mate_200id_4s",
     srcs = [
         "lr_mate_200id_4s/lr_mate_200id_4s.sdf.xacro",
         "lr_mate_200id_4s/lr_mate_200id_4s.xacro",
@@ -99,7 +99,7 @@ filegroup(
 )
 
 filegroup(
-    name = "r_2000ic_210l_data",
+    name = "r_2000ic_210l",
     srcs = [
         "r_2000ic_210l/r_2000ic_210l.sdf.xacro",
         "r_2000ic_210l/r_2000ic_210l.xacro",
@@ -214,7 +214,7 @@ xacro_file(
     name = "lr_10ia_10_xacro",
     src = "lr_10ia_10/lr_10ia_10.sdf.xacro",
     out = "lr_10ia_10_world.sdf",
-    data = [":lr_10ia_10_data"],
+    data = [":lr_10ia_10"],
     # TODO(b/441705658): Remove visibility once Jacobian is exposed by motion
     # planner client.
     # LINT.IfChange(lr_10ia_10_xacro_visibility)
@@ -223,7 +223,7 @@ xacro_file(
 )
 
 sdf_scene_object(
-    name = "lr_10ia_10",
+    name = "lr_10ia_10_scene_object",
     src = "lr_10ia_10_world.sdf",
     sdf_assets = ["//third_party/fanuc/lr_10ia_10:lr_10ia_10_resources"],
     updates_pbtxts = [
@@ -238,12 +238,12 @@ xacro_file(
     name = "lr_mate_200id_7l_xacro",
     src = "lr_mate_200id_7l/lr_mate_200id_7l.sdf.xacro",
     out = "lr_mate_200id_7l_world.sdf",
-    data = [":lr_mate_200id_7l_data"],
+    data = [":lr_mate_200id_7l"],
     visibility = ["//visibility:public"],
 )
 
 sdf_scene_object(
-    name = "lr_mate_200id_7l",
+    name = "lr_mate_200id_7l_scene_object",
     src = "lr_mate_200id_7l_world.sdf",
     sdf_assets = ["//third_party/fanuc/lr_mate_200id_7l:lr_mate_200id_7l_resources"],
     updates_pbtxts = [
@@ -258,12 +258,12 @@ xacro_file(
     name = "r_2000ic_210l_xacro",
     src = "r_2000ic_210l/r_2000ic_210l.sdf.xacro",
     out = "r_2000ic_210l_world.sdf",
-    data = [":r_2000ic_210l_data"],
+    data = [":r_2000ic_210l"],
     visibility = ["//visibility:private"],
 )
 
 sdf_scene_object(
-    name = "r_2000ic_210l",
+    name = "r_2000ic_210l_scene_object",
     src = "r_2000ic_210l_world.sdf",
     sdf_assets = ["//third_party/fanuc/r_2000ic_210l:r_2000ic_210l_resources"],
     updates_pbtxts = [
@@ -308,7 +308,7 @@ xacro_file(
     name = "lr_mate_200id_4s_xacro",
     src = "lr_mate_200id_4s/lr_mate_200id_4s.sdf.xacro",
     out = "lr_mate_200id_4s_world.sdf",
-    data = [":lr_mate_200id_4s_data"],
+    data = [":lr_mate_200id_4s"],
     visibility = ["//visibility:private"],
 )
 
@@ -328,7 +328,7 @@ xacro_file(
     name = "crx_10ia_xacro",
     src = "crx_10ia/crx_10ia.sdf.xacro",
     out = "crx_10ia_world.sdf",
-    data = [":crx_10ia_data"],
+    data = [":crx_10ia"],
     visibility = ["//visibility:private"],
 )
 
@@ -348,7 +348,7 @@ xacro_file(
     name = "crx_10ia_l_xacro",
     src = "crx_10ia_l/crx_10ia_l.sdf.xacro",
     out = "crx_10ia_l_world.sdf",
-    data = [":crx_10ia_l_data"],
+    data = [":crx_10ia_l"],
     visibility = ["//visibility:private"],
 )
 
@@ -368,7 +368,7 @@ xacro_file(
     name = "crx_20ia_l_xacro",
     src = "crx_20ia_l/crx_20ia_l.sdf.xacro",
     out = "crx_20ia_l_world.sdf",
-    data = [":crx_20ia_l_data"],
+    data = [":crx_20ia_l"],
     visibility = ["//visibility:private"],
 )
 
@@ -388,7 +388,7 @@ xacro_file(
     name = "crx_30ia_xacro",
     src = "crx_30ia/crx_30ia.sdf.xacro",
     out = "crx_30ia_world.sdf",
-    data = [":crx_30ia_data"],
+    data = [":crx_30ia"],
     visibility = ["//visibility:private"],
 )
 
