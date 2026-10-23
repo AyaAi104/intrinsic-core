@@ -44,7 +44,7 @@ xacro_file(
 sdf_scene_object(
     name = "ur3e_scene_object",
     src = "ur3e_world.sdf",
-    sdf_assets = ["//intrinsic/robot_definitions/ur:ur3e"],
+    sdf_assets = ["//third_party/universal_robots:ur3e"],
     updates_pbtxts = [
         "ur.named_configurations.pbtxt",
         "ur3e/ur3e_limits.updates.pbtxt",
@@ -83,7 +83,7 @@ xacro_file(
 sdf_scene_object(
     name = "ur5e_scene_object",
     src = "ur5e_world.sdf",
-    sdf_assets = ["//intrinsic/robot_definitions/ur:ur5e"],
+    sdf_assets = ["//third_party/universal_robots:ur5e"],
     updates_pbtxts = [
         "ur.named_configurations.pbtxt",
         "ur5e/ur5e_limits.updates.pbtxt",
@@ -118,7 +118,7 @@ xacro_file(
 sdf_scene_object(
     name = "ur10e_scene_object",
     src = "ur10e_world.sdf",
-    sdf_assets = ["//intrinsic/robot_definitions/ur:ur10e"],
+    sdf_assets = ["//third_party/universal_robots:ur10e"],
     updates_pbtxts = [
         "ur.named_configurations.pbtxt",
         "ur10e/ur10e_limits.updates.pbtxt",

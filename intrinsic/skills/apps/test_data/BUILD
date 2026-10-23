@@ -73,9 +73,9 @@ sdf_world(
 )
 
 # Allowlist for `ur5_world`. Do not use `ur5_world` in new tests. This world uses
-# the `CB3 Series — Legacy` `//intrinsic/robot_definitions/ur:ur5` model,
-# which is not officially supported in real workcells and is not part of the
-# Intrinsic Core open-source release. New tests should use the canonical
+# the `CB3 Series — Legacy` `//intrinsic/robot_definitions/ur:legacy_ur5`
+# model, which is not officially supported in real workcells and is not part of
+# the Intrinsic Core open-source release. New tests should use the canonical
 # e-Series definitions in
 # `//intrinsic_control/intrinsic/models/robot_definitions/ur`.
 # Contact sesc@ if you would like to extend this allowlist.
