@@ -128,7 +128,7 @@ intrinsic_hardware_device = rule(
                   must not already be listed in the manifest.""",
         ),
         "manifest": attr.label(
-            allow_single_file = [".textproto"],
+            allow_single_file = [".textproto", ".txtpb"],
             mandatory = True,
             doc = "A manifest that provides the HardwareDevice definition.",
         ),

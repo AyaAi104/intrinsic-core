@@ -135,7 +135,7 @@ intrinsic_data = rule(
             doc = "Referenced data files to exclude from the output tar bundle.",
         ),
         "manifest": attr.label(
-            allow_single_file = [".textproto"],
+            allow_single_file = [".textproto", ".txtpb"],
             mandatory = True,
             doc = "A manifest that provides the data payload and metadata.",
         ),

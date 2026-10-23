@@ -120,7 +120,7 @@ intrinsic_scene_object = rule(
             aspects = [gen_source_code_info_descriptor_set],
         ),
         "manifest": attr.label(
-            allow_single_file = [".textproto"],
+            allow_single_file = [".textproto", ".txtpb"],
             mandatory = True,
             doc = (
                 "A manifest that can be used to provide the scene object metadata."
