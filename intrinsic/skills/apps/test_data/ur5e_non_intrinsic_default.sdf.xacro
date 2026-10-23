@@ -15,12 +15,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<sdf version="1.6">
-    <world name="default">
-        <model name="my_robot">
-            <include>
-                <uri>model://intrinsic/robot_definitions/ur/ur5e</uri>
-            </include>
-        </model>
-    </world>
+<sdf version="1.9" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(cwd)/intrinsic_control/intrinsic/models/robot_definitions/ur/ur5e/ur5e_base.xacro"/>
+  <world name="default">
+    <xacro:ur5e_base_sdf
+        name="my_robot"
+        shoulder_pan_yaw="0"
+        wrist_3_pitch="0"
+        include_ft_sensor="false"
+        include_power_cable_visual="false">
+      <model_options/>
+    </xacro:ur5e_base_sdf>
+  </world>
 </sdf>

@@ -20,7 +20,7 @@ updates {
   add_label {
     entities {
       by_labels {
-        label_ids: "my_robot::ur5e"
+        label_ids: "my_robot"
         entity_name: "wrist_3_link"
       }
     }
@@ -31,10 +31,10 @@ updates {
 
 updates {
   set_robot_tip {
-    robot_name: "my_robot::ur5e"
+    robot_name: "my_robot"
     tip_entity {
       by_labels {
-        label_ids: "my_robot::ur5e"
+        label_ids: "my_robot"
         entity_name: "wrist_3_link"
       }
     }
@@ -43,14 +43,14 @@ updates {
 
 updates {
   self_exclusions {
-    robot_id: "my_robot::ur5e"
+    robot_id: "my_robot"
   }
 }
 
 updates {
   set_object_names {
     models_to_objects {
-      sdf_model_name: "my_robot::ur5e"
+      sdf_model_name: "my_robot"
       object_name: "my_robot"
     }
   }
@@ -61,24 +61,17 @@ updates {
     entities {
       # Collections entity of robot.
       by_labels: {
-        label_ids: "my_robot::ur5e"
+        label_ids: "my_robot"
         entity_name: "base_link"
       }
     }
     solver_key: "ur"
     override_tip_entity: {
       by_labels {
-        label_ids: "my_robot::ur5e"
+        label_ids: "my_robot"
         entity_name: "wrist_3_link"
       }
     }
-  }
-}
-
-updates {
-  add_entity: {
-    parent: { by_labels { label_ids: "my_robot::ur5e" label_ids: "tip" } }
-    local_name: "flange"
   }
 }
 
