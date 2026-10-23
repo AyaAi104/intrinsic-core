@@ -21,6 +21,7 @@ filegroup(
     srcs = [
         "LICENSE",
         "README.md",
+        "kr20_r1810_2_macro.xacro",
     ] + glob(
         [
             "collision/*",

@@ -21,6 +21,7 @@ exports_files(["crx_20ia_l_base.xacro"])
 filegroup(
     name = "crx_20ia_l_resources",
     srcs = [
+        "LICENSE",
         "README.md",
     ] + glob(
         [

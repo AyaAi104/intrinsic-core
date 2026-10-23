@@ -21,15 +21,24 @@ exports_files([
 
 filegroup(
     name = "ur10e",
-    srcs = ["README.md"] + glob(["ur10e/**"]),
+    srcs = [
+        "LICENSE",
+        "README.md",
+    ] + glob(["ur10e/**"]),
 )
 
 filegroup(
     name = "ur3e",
-    srcs = ["README.md"] + glob(["ur3e/**"]),
+    srcs = [
+        "LICENSE",
+        "README.md",
+    ] + glob(["ur3e/**"]),
 )
 
 filegroup(
     name = "ur5e",
-    srcs = ["README.md"] + glob(["ur5e/**"]),
+    srcs = [
+        "LICENSE",
+        "README.md",
+    ] + glob(["ur5e/**"]),
 )
