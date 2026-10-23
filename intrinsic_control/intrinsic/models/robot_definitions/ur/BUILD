@@ -20,6 +20,7 @@ filegroup(
     srcs = [
         "simulation_plugins.xacro",
     ],
+    visibility = ["//visibility:private"],
 )
 
 filegroup(
