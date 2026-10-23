@@ -90,7 +90,16 @@ class AdmittanceStateVariables {
   bool is_done_ = false;
   std::optional<bool> reference_pose_reached_ = std::nullopt;
   std::optional<double> reference_position_error_ = std::nullopt;
+  std::optional<double> reference_position_error_in_direction_1_ = std::nullopt;
+  std::optional<double> reference_position_error_in_direction_2_ = std::nullopt;
+  std::optional<double> reference_position_error_in_direction_3_ = std::nullopt;
   std::optional<double> reference_orientation_error_ = std::nullopt;
+  std::optional<double> reference_orientation_error_about_axis_1_ =
+      std::nullopt;
+  std::optional<double> reference_orientation_error_about_axis_2_ =
+      std::nullopt;
+  std::optional<double> reference_orientation_error_about_axis_3_ =
+      std::nullopt;
   int64_t streaming_input_message_count_ = 0;
   std::optional<double> settled_for_seconds_ = std::nullopt;
   std::optional<double> sensed_force_ = std::nullopt;

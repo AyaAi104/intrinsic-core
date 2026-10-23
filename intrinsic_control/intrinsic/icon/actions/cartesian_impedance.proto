@@ -189,6 +189,24 @@ message StateVariableConfiguration {
   optional intrinsic_proto.Vector3 torque_axis_1_in_task = 12;
   optional intrinsic_proto.Vector3 torque_axis_2_in_task = 13;
   optional intrinsic_proto.Vector3 torque_axis_3_in_task = 14;
+  // The three directions along which the reference position error is measured
+  // and reported in the state variables `kReferencePositionErrorInDirection1`,
+  // `kReferencePositionErrorInDirection2`,
+  // `kReferencePositionErrorInDirection3`. The directions are normalized, the
+  // magnitude is ignored. Defined in the task frame. They default to the x-y-z
+  // directions.
+  optional intrinsic_proto.Vector3 position_error_direction_1_in_task = 15;
+  optional intrinsic_proto.Vector3 position_error_direction_2_in_task = 16;
+  optional intrinsic_proto.Vector3 position_error_direction_3_in_task = 17;
+  // The three axes about which the reference orientation error is measured and
+  // reported in the state variables `kReferenceOrientationErrorAboutAxis1`,
+  // `kReferenceOrientationErrorAboutAxis2`,
+  // `kReferenceOrientationErrorAboutAxis3`. The axes are normalized, the
+  // magnitude is ignored. Defined in the task frame. They default to the x-y-z
+  // directions.
+  optional intrinsic_proto.Vector3 orientation_error_axis_1_in_task = 18;
+  optional intrinsic_proto.Vector3 orientation_error_axis_2_in_task = 19;
+  optional intrinsic_proto.Vector3 orientation_error_axis_3_in_task = 20;
 }
 
 message CartesianImpedanceParameters {

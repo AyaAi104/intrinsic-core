@@ -47,6 +47,48 @@ struct ComplianceInfo {
   static constexpr char kReferenceOrientationErrorDescription[] =
       "Returns the angular distance between the desired reference orientation "
       "and the sensed orientation of the robot tool in radians.";
+  static constexpr char kReferencePositionErrorInDirection1[] =
+      "intrinsic.reference_position_error_in_direction_1";
+  static constexpr char kReferencePositionErrorInDirection1Description[] =
+      "Returns the signed position error (current minus reference) of the "
+      "robot tool in the task frame projected onto direction_1 in meters. "
+      "Configure the direction in the StateVariableConfiguration. Default is "
+      "the x-axis.";
+  static constexpr char kReferencePositionErrorInDirection2[] =
+      "intrinsic.reference_position_error_in_direction_2";
+  static constexpr char kReferencePositionErrorInDirection2Description[] =
+      "Returns the signed position error (current minus reference) of the "
+      "robot tool in the task frame projected onto direction_2 in meters. "
+      "Configure the direction in the StateVariableConfiguration. Default is "
+      "the y-axis.";
+  static constexpr char kReferencePositionErrorInDirection3[] =
+      "intrinsic.reference_position_error_in_direction_3";
+  static constexpr char kReferencePositionErrorInDirection3Description[] =
+      "Returns the signed position error (current minus reference) of the "
+      "robot tool in the task frame projected onto direction_3 in meters. "
+      "Configure the direction in the StateVariableConfiguration. Default is "
+      "the z-axis.";
+  static constexpr char kReferenceOrientationErrorAboutAxis1[] =
+      "intrinsic.reference_orientation_error_about_axis_1";
+  static constexpr char kReferenceOrientationErrorAboutAxis1Description[] =
+      "Returns the signed orientation error rotation vector (current minus "
+      "reference) of the robot tool in the task frame about axis_1 in "
+      "radians. Configure the axis in the StateVariableConfiguration. Default "
+      "is the x-axis.";
+  static constexpr char kReferenceOrientationErrorAboutAxis2[] =
+      "intrinsic.reference_orientation_error_about_axis_2";
+  static constexpr char kReferenceOrientationErrorAboutAxis2Description[] =
+      "Returns the signed orientation error rotation vector (current minus "
+      "reference) of the robot tool in the task frame about axis_2 in "
+      "radians. Configure the axis in the StateVariableConfiguration. Default "
+      "is the y-axis.";
+  static constexpr char kReferenceOrientationErrorAboutAxis3[] =
+      "intrinsic.reference_orientation_error_about_axis_3";
+  static constexpr char kReferenceOrientationErrorAboutAxis3Description[] =
+      "Returns the signed orientation error rotation vector (current minus "
+      "reference) of the robot tool in the task frame about axis_3 in "
+      "radians. Configure the axis in the StateVariableConfiguration. Default "
+      "is the z-axis.";
   static constexpr char kStreamingInputMessageCount[] =
       "intrinsic.streaming_input_message_count";
   static constexpr char kStreamingInputMessageCountDescription[] =

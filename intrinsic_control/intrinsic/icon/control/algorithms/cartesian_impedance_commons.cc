@@ -257,6 +257,42 @@ absl::Status Preprocess(StateVariableConfiguration& params) {
   }
   params.force_direction_3_in_task.normalize();
 
+  if (params.position_error_direction_1_in_task.norm() < kMinVectorNorm) {
+    return absl::FailedPreconditionError(
+        "Position error direction 1 cannot have a zero norm.");
+  }
+  params.position_error_direction_1_in_task.normalize();
+
+  if (params.position_error_direction_2_in_task.norm() < kMinVectorNorm) {
+    return absl::FailedPreconditionError(
+        "Position error direction 2 cannot have a zero norm.");
+  }
+  params.position_error_direction_2_in_task.normalize();
+
+  if (params.position_error_direction_3_in_task.norm() < kMinVectorNorm) {
+    return absl::FailedPreconditionError(
+        "Position error direction 3 cannot have a zero norm.");
+  }
+  params.position_error_direction_3_in_task.normalize();
+
+  if (params.orientation_error_axis_1_in_task.norm() < kMinVectorNorm) {
+    return absl::FailedPreconditionError(
+        "Orientation error axis 1 cannot have a zero norm.");
+  }
+  params.orientation_error_axis_1_in_task.normalize();
+
+  if (params.orientation_error_axis_2_in_task.norm() < kMinVectorNorm) {
+    return absl::FailedPreconditionError(
+        "Orientation error axis 2 cannot have a zero norm.");
+  }
+  params.orientation_error_axis_2_in_task.normalize();
+
+  if (params.orientation_error_axis_3_in_task.norm() < kMinVectorNorm) {
+    return absl::FailedPreconditionError(
+        "Orientation error axis 3 cannot have a zero norm.");
+  }
+  params.orientation_error_axis_3_in_task.normalize();
+
   return absl::OkStatus();
 }
 

@@ -20,6 +20,9 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "intrinsic/eigenmath/manifolds.h"
+#include "intrinsic/eigenmath/so3.h"
+#include "intrinsic/eigenmath/types.h"
 #include "intrinsic/icon/actions/action_utils.h"
 #include "intrinsic/icon/actions/cartesian_impedance_parameters.h"
 #include "intrinsic/icon/actions/compliance_info.h"
@@ -58,8 +61,38 @@ absl::Status AdmittanceStateVariables::RegisterVariables(
   INTR_RETURN_IF_ERROR(
       builder.AddStateVariable<intrinsic_proto::icon::v1::ActionSignature::
                                    StateVariableInfo::TYPE_DOUBLE>(
+          ComplianceInfo::kReferencePositionErrorInDirection1,
+          ComplianceInfo::kReferencePositionErrorInDirection1Description));
+  INTR_RETURN_IF_ERROR(
+      builder.AddStateVariable<intrinsic_proto::icon::v1::ActionSignature::
+                                   StateVariableInfo::TYPE_DOUBLE>(
+          ComplianceInfo::kReferencePositionErrorInDirection2,
+          ComplianceInfo::kReferencePositionErrorInDirection2Description));
+  INTR_RETURN_IF_ERROR(
+      builder.AddStateVariable<intrinsic_proto::icon::v1::ActionSignature::
+                                   StateVariableInfo::TYPE_DOUBLE>(
+          ComplianceInfo::kReferencePositionErrorInDirection3,
+          ComplianceInfo::kReferencePositionErrorInDirection3Description));
+  INTR_RETURN_IF_ERROR(
+      builder.AddStateVariable<intrinsic_proto::icon::v1::ActionSignature::
+                                   StateVariableInfo::TYPE_DOUBLE>(
           ComplianceInfo::kReferenceOrientationError,
           ComplianceInfo::kReferenceOrientationErrorDescription));
+  INTR_RETURN_IF_ERROR(
+      builder.AddStateVariable<intrinsic_proto::icon::v1::ActionSignature::
+                                   StateVariableInfo::TYPE_DOUBLE>(
+          ComplianceInfo::kReferenceOrientationErrorAboutAxis1,
+          ComplianceInfo::kReferenceOrientationErrorAboutAxis1Description));
+  INTR_RETURN_IF_ERROR(
+      builder.AddStateVariable<intrinsic_proto::icon::v1::ActionSignature::
+                                   StateVariableInfo::TYPE_DOUBLE>(
+          ComplianceInfo::kReferenceOrientationErrorAboutAxis2,
+          ComplianceInfo::kReferenceOrientationErrorAboutAxis2Description));
+  INTR_RETURN_IF_ERROR(
+      builder.AddStateVariable<intrinsic_proto::icon::v1::ActionSignature::
+                                   StateVariableInfo::TYPE_DOUBLE>(
+          ComplianceInfo::kReferenceOrientationErrorAboutAxis3,
+          ComplianceInfo::kReferenceOrientationErrorAboutAxis3Description));
   INTR_RETURN_IF_ERROR(
       builder.AddStateVariable<intrinsic_proto::icon::v1::ActionSignature::
                                    StateVariableInfo::TYPE_INT64>(
@@ -157,6 +190,30 @@ RealtimeStatusOr<StateVariableValue> AdmittanceStateVariables::GetStateVariable(
     }
     return StateVariableValue(reference_position_error_.value());
   }
+  if (name == ComplianceInfo::kReferencePositionErrorInDirection1) {
+    if (!reference_position_error_in_direction_1_.has_value()) {
+      return icon::UnavailableError(
+          "reference_position_error_in_direction_1 is unknown (did you set "
+          "call Sense() at least once?");
+    }
+    return StateVariableValue(reference_position_error_in_direction_1_.value());
+  }
+  if (name == ComplianceInfo::kReferencePositionErrorInDirection2) {
+    if (!reference_position_error_in_direction_2_.has_value()) {
+      return icon::UnavailableError(
+          "reference_position_error_in_direction_2 is unknown (did you set "
+          "call Sense() at least once?");
+    }
+    return StateVariableValue(reference_position_error_in_direction_2_.value());
+  }
+  if (name == ComplianceInfo::kReferencePositionErrorInDirection3) {
+    if (!reference_position_error_in_direction_3_.has_value()) {
+      return icon::UnavailableError(
+          "reference_position_error_in_direction_3 is unknown (did you set "
+          "call Sense() at least once?");
+    }
+    return StateVariableValue(reference_position_error_in_direction_3_.value());
+  }
   if (name == ComplianceInfo::kReferenceOrientationError) {
     if (!reference_orientation_error_.has_value()) {
       return icon::UnavailableError(
@@ -164,6 +221,33 @@ RealtimeStatusOr<StateVariableValue> AdmittanceStateVariables::GetStateVariable(
           "least once?");
     }
     return StateVariableValue(reference_orientation_error_.value());
+  }
+  if (name == ComplianceInfo::kReferenceOrientationErrorAboutAxis1) {
+    if (!reference_orientation_error_about_axis_1_.has_value()) {
+      return icon::UnavailableError(
+          "reference_orientation_error_about_axis_1 is unknown (did you set "
+          "call Sense() at least once?");
+    }
+    return StateVariableValue(
+        reference_orientation_error_about_axis_1_.value());
+  }
+  if (name == ComplianceInfo::kReferenceOrientationErrorAboutAxis2) {
+    if (!reference_orientation_error_about_axis_2_.has_value()) {
+      return icon::UnavailableError(
+          "reference_orientation_error_about_axis_2 is unknown (did you set "
+          "call Sense() at least once?");
+    }
+    return StateVariableValue(
+        reference_orientation_error_about_axis_2_.value());
+  }
+  if (name == ComplianceInfo::kReferenceOrientationErrorAboutAxis3) {
+    if (!reference_orientation_error_about_axis_3_.has_value()) {
+      return icon::UnavailableError(
+          "reference_orientation_error_about_axis_3 is unknown (did you set "
+          "call Sense() at least once?");
+    }
+    return StateVariableValue(
+        reference_orientation_error_about_axis_3_.value());
   }
   if (name == ComplianceInfo::kStreamingInputMessageCount) {
     return StateVariableValue(streaming_input_message_count_);
@@ -270,7 +354,13 @@ void AdmittanceStateVariables::Reset() {
   is_done_ = false;
   reference_pose_reached_ = std::nullopt;
   reference_position_error_ = std::nullopt;
+  reference_position_error_in_direction_1_ = std::nullopt;
+  reference_position_error_in_direction_2_ = std::nullopt;
+  reference_position_error_in_direction_3_ = std::nullopt;
   reference_orientation_error_ = std::nullopt;
+  reference_orientation_error_about_axis_1_ = std::nullopt;
+  reference_orientation_error_about_axis_2_ = std::nullopt;
+  reference_orientation_error_about_axis_3_ = std::nullopt;
   streaming_input_message_count_ = 0;
   settled_for_seconds_ = std::nullopt;
   sensed_force_ = std::nullopt;
@@ -294,12 +384,29 @@ void AdmittanceStateVariables::Update(const UpdateParams& values) {
       values.reference_task_t_tool,
       state_variable_config_.position_error_threshold,
       state_variable_config_.orientation_error_threshold);
-  reference_position_error_ = (values.current_task_t_tool.translation() -
-                               values.reference_task_t_tool.translation())
-                                  .norm();
-  reference_orientation_error_ =
-      std::abs(values.current_task_t_tool.quaternion().angularDistance(
-          values.reference_task_t_tool.quaternion()));
+  const eigenmath::Vector3d position_error =
+      values.current_task_t_tool.translation() -
+      values.reference_task_t_tool.translation();
+  reference_position_error_ = position_error.norm();
+  reference_position_error_in_direction_1_ = position_error.dot(
+      state_variable_config_.position_error_direction_1_in_task);
+  reference_position_error_in_direction_2_ = position_error.dot(
+      state_variable_config_.position_error_direction_2_in_task);
+  reference_position_error_in_direction_3_ = position_error.dot(
+      state_variable_config_.position_error_direction_3_in_task);
+  const eigenmath::SO3d tool_current_q_tool_reference =
+      values.current_task_t_tool.so3().inverse() *
+      values.reference_task_t_tool.so3();
+  const eigenmath::Vector3d orientation_error =
+      -values.current_task_t_tool.rotationMatrix() *
+      eigenmath::logSO3(tool_current_q_tool_reference);
+  reference_orientation_error_ = orientation_error.norm();
+  reference_orientation_error_about_axis_1_ = orientation_error.dot(
+      state_variable_config_.orientation_error_axis_1_in_task);
+  reference_orientation_error_about_axis_2_ = orientation_error.dot(
+      state_variable_config_.orientation_error_axis_2_in_task);
+  reference_orientation_error_about_axis_3_ = orientation_error.dot(
+      state_variable_config_.orientation_error_axis_3_in_task);
   streaming_input_message_count_ = values.streaming_input_message_count;
   sensed_force_ = values.sensed_wrench.head<3>().norm();
   sensed_torque_ = values.sensed_wrench.tail<3>().norm();

@@ -88,6 +88,18 @@ struct StateVariableConfiguration {
   eigenmath::Vector3d torque_axis_1_in_task = eigenmath::Vector3d::UnitX();
   eigenmath::Vector3d torque_axis_2_in_task = eigenmath::Vector3d::UnitY();
   eigenmath::Vector3d torque_axis_3_in_task = eigenmath::Vector3d::UnitZ();
+  eigenmath::Vector3d position_error_direction_1_in_task =
+      eigenmath::Vector3d::UnitX();
+  eigenmath::Vector3d position_error_direction_2_in_task =
+      eigenmath::Vector3d::UnitY();
+  eigenmath::Vector3d position_error_direction_3_in_task =
+      eigenmath::Vector3d::UnitZ();
+  eigenmath::Vector3d orientation_error_axis_1_in_task =
+      eigenmath::Vector3d::UnitX();
+  eigenmath::Vector3d orientation_error_axis_2_in_task =
+      eigenmath::Vector3d::UnitY();
+  eigenmath::Vector3d orientation_error_axis_3_in_task =
+      eigenmath::Vector3d::UnitZ();
 };
 
 struct CartesianPositionReflexxesImpedanceGeneratorParameters {

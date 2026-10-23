@@ -338,6 +338,18 @@ intrinsic_proto::icon::actions::proto::StateVariableConfiguration ToProto(
       ToVectorProto(params.torque_axis_2_in_task);
   *proto_params.mutable_torque_axis_3_in_task() =
       ToVectorProto(params.torque_axis_3_in_task);
+  *proto_params.mutable_position_error_direction_1_in_task() =
+      ToVectorProto(params.position_error_direction_1_in_task);
+  *proto_params.mutable_position_error_direction_2_in_task() =
+      ToVectorProto(params.position_error_direction_2_in_task);
+  *proto_params.mutable_position_error_direction_3_in_task() =
+      ToVectorProto(params.position_error_direction_3_in_task);
+  *proto_params.mutable_orientation_error_axis_1_in_task() =
+      ToVectorProto(params.orientation_error_axis_1_in_task);
+  *proto_params.mutable_orientation_error_axis_2_in_task() =
+      ToVectorProto(params.orientation_error_axis_2_in_task);
+  *proto_params.mutable_orientation_error_axis_3_in_task() =
+      ToVectorProto(params.orientation_error_axis_3_in_task);
 
   return proto_params;
 }
@@ -591,6 +603,30 @@ absl::StatusOr<cartesian_impedance::StateVariableConfiguration> FromProto(
   if (proto_params.has_torque_axis_3_in_task()) {
     params.torque_axis_3_in_task =
         FromProto(proto_params.torque_axis_3_in_task());
+  }
+  if (proto_params.has_position_error_direction_1_in_task()) {
+    params.position_error_direction_1_in_task =
+        FromProto(proto_params.position_error_direction_1_in_task());
+  }
+  if (proto_params.has_position_error_direction_2_in_task()) {
+    params.position_error_direction_2_in_task =
+        FromProto(proto_params.position_error_direction_2_in_task());
+  }
+  if (proto_params.has_position_error_direction_3_in_task()) {
+    params.position_error_direction_3_in_task =
+        FromProto(proto_params.position_error_direction_3_in_task());
+  }
+  if (proto_params.has_orientation_error_axis_1_in_task()) {
+    params.orientation_error_axis_1_in_task =
+        FromProto(proto_params.orientation_error_axis_1_in_task());
+  }
+  if (proto_params.has_orientation_error_axis_2_in_task()) {
+    params.orientation_error_axis_2_in_task =
+        FromProto(proto_params.orientation_error_axis_2_in_task());
+  }
+  if (proto_params.has_orientation_error_axis_3_in_task()) {
+    params.orientation_error_axis_3_in_task =
+        FromProto(proto_params.orientation_error_axis_3_in_task());
   }
 
   return params;
