@@ -296,6 +296,18 @@ class ClipsExecutor {
   GetProcessTreeNoLock(absl::string_view operation_name)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(clips_->mutex());
 
+  // Retrieves the current run metadata sequence number.
+  // TODO(b/493547558): Each getter (GetProcessTree, GetOperationState,
+  // GetRunMetadataSequenceNumber, ...) acquires the CLIPS mutex separately, so
+  // the CLIPS loop can run between two calls. Values combined from several
+  // getters (e.g., in ClipsExecutiveService::UpdateOperationData) may thus be
+  // an inconsistent snapshot, e.g., a sequence number that is newer than the
+  // behavior tree. Resolve this by reading the RunMetadata proto maintained by
+  // the ProtobufManager under a single lock.
+  virtual absl::StatusOr<uint64_t> GetRunMetadataSequenceNumber(
+      absl::string_view operation_name) ABSL_LOCKS_EXCLUDED(clips_->mutex());
+
+
   virtual absl::StatusOr<google::protobuf::Any> GetBlackboardValue(
       absl::string_view key, absl::string_view scope,
       absl::string_view operation_name) ABSL_LOCKS_EXCLUDED(clips_->mutex());

@@ -1222,6 +1222,15 @@ void ClipsExecutiveService::UpdateOperationData(
   } else {
     operation_data->metadata.clear_behavior_tree();
   }
+
+  absl::StatusOr<uint64_t> sequence_number =
+      executor_->GetRunMetadataSequenceNumber(operation_data->operation.name());
+  if (sequence_number.ok()) {
+    operation_data->metadata.set_sequence_number(*sequence_number);
+  } else {
+    operation_data->metadata.clear_sequence_number();
+  }
+
   absl::StatusOr<intrinsic_proto::executive::RunMetadata::State>
       operation_state =
           executor_->GetOperationState(operation_data->operation.name());

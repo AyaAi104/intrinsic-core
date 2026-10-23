@@ -1306,6 +1306,30 @@ absl::StatusOr<BehaviorTree> ClipsExecutor::GetProcessTreeNoLock(
   return run_metadata->behavior_tree();
 }
 
+
+absl::StatusOr<uint64_t> ClipsExecutor::GetRunMetadataSequenceNumber(
+    absl::string_view operation_name) ABSL_LOCKS_EXCLUDED(clips_->mutex()) {
+  absl::MutexLock lock(*clips_->mutex());
+  INTR_ASSIGN_OR_RETURN(
+      clips::Fact operation_fact,
+      clips_->GetUniqueFact("operation-envelope", {{"name", operation_name}}));
+
+  INTR_ASSIGN_OR_RETURN(clips::Value run_metadata_id_val,
+                        operation_fact.GetSlotValue("run-metadata-proto"));
+  INTR_ASSIGN_OR_RETURN(int64_t run_metadata_id,
+                        run_metadata_id_val.GetInteger());
+
+  INTR_ASSIGN_OR_RETURN(
+      clips::Value sequence_number_val,
+      proto_mgr_->GetFieldValue(clips::ProtoMessageId(run_metadata_id),
+                                "sequence_number"));
+  INTR_ASSIGN_OR_RETURN(int64_t sequence_number,
+                        sequence_number_val.GetInteger());
+
+  return static_cast<uint64_t>(sequence_number);
+}
+
+
 absl::StatusOr<std::string> ClipsExecutor::GetProcessTreeScope(
     absl::string_view operation_name) ABSL_LOCKS_EXCLUDED(clips_->mutex()) {
   absl::MutexLock lock(*clips_->mutex());
