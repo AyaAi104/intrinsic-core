@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("//bazel:go_macros.bzl", "go_binary", "go_proto_library")
+load("//bazel:go_macros.bzl", "go_binary", "go_library", "go_proto_library")
 load("//bazel:protos.bzl", "proto_library")
 
 package(default_visibility = [
@@ -89,5 +89,30 @@ go_binary(
         "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
         "@org_golang_google_protobuf//reflect/protoregistry:go_default_library",
         "@org_golang_google_protobuf//types/known/emptypb",
+    ],
+)
+
+go_library(
+    name = "assetprocessor",
+    srcs = ["assetprocessor.go"],
+    importpath = "intrinsic/assets/build_defs/assetprocessor",
+    deps = [
+        ":asset_go_proto",
+        "//intrinsic_sdk/intrinsic/assets:bundle",
+        "//intrinsic_sdk/intrinsic/assets:idutils",
+        "//intrinsic_sdk/intrinsic/assets:throttle",
+        "//intrinsic_sdk/intrinsic/assets/proto/v1:asset_go_proto",
+        "//intrinsic_sdk/intrinsic/assets/proto/v1:solution_deployment_go_proto",
+        "//intrinsic_sdk/intrinsic/assets/proto/v1:solution_go_proto",
+        "//intrinsic_sdk/intrinsic/util/proto:registryutil",
+        "@com_github_golang_glog//:go_default_library",
+        "@intrinsic_apis//intrinsic/assets/proto:id_go_proto",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:asset_instances_go_proto",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:instance_config_go_proto",
+        "@intrinsic_apis//intrinsic/assets/proto/v1:reference_go_proto",
+        "@io_opencensus_go//trace:go_default_library",
+        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
+        "@org_golang_google_protobuf//reflect/protoregistry:go_default_library",
+        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
     ],
 )

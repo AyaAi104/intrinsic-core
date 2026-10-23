@@ -59,31 +59,6 @@ go_library(
 )
 
 go_library(
-    name = "assetprocessor",
-    srcs = ["assetprocessor.go"],
-    importpath = "intrinsic/assets/build_defs/assetprocessor",
-    deps = [
-        ":asset_go_proto",
-        "//intrinsic_sdk/intrinsic/assets:bundle",
-        "//intrinsic_sdk/intrinsic/assets:idutils",
-        "//intrinsic_sdk/intrinsic/assets:throttle",
-        "//intrinsic_sdk/intrinsic/assets/proto/v1:asset_go_proto",
-        "//intrinsic_sdk/intrinsic/assets/proto/v1:solution_deployment_go_proto",
-        "//intrinsic_sdk/intrinsic/assets/proto/v1:solution_go_proto",
-        "//intrinsic_sdk/intrinsic/util/proto:registryutil",
-        "@com_github_golang_glog//:go_default_library",
-        "@intrinsic_apis//intrinsic/assets/proto:id_go_proto",
-        "@intrinsic_apis//intrinsic/assets/proto/v1:asset_instances_go_proto",
-        "@intrinsic_apis//intrinsic/assets/proto/v1:instance_config_go_proto",
-        "@intrinsic_apis//intrinsic/assets/proto/v1:reference_go_proto",
-        "@io_opencensus_go//trace:go_default_library",
-        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
-        "@org_golang_google_protobuf//reflect/protoregistry:go_default_library",
-        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
-    ],
-)
-
-go_library(
     name = "cascopyprocessor",
     srcs = ["cascopyprocessor.go"],
     importpath = "intrinsic/assets/build_defs/cascopyprocessor",
@@ -104,7 +79,6 @@ go_binary(
     importpath = "intrinsic/assets/build_defs/solution_update",
     deps = [
         ":asset_go_proto",
-        ":assetprocessor",
         ":cascopyprocessor",
         "//intrinsic/assets/conversion:solutionconversion",
         "//intrinsic/config/proto:application_go_proto",
@@ -123,6 +97,7 @@ go_binary(
         "//intrinsic_sdk/intrinsic/assets:imagetransfer",
         "//intrinsic_sdk/intrinsic/assets:referenceddata",
         "//intrinsic_sdk/intrinsic/assets:throttle",
+        "//intrinsic_sdk/intrinsic/assets/build_defs:assetprocessor",
         "//intrinsic_sdk/intrinsic/assets/platformlevelswitch",
         "//intrinsic_sdk/intrinsic/assets/proto/v1:solution_deployment_go_proto",
         "//intrinsic_sdk/intrinsic/assets/scene_objects:gzfprocessor",
