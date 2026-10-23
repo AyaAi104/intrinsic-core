@@ -1692,8 +1692,9 @@ void RegisterMetrics() {
 
 absl::StatusOr<intrinsic_proto::world::World> BuildWorldProto(
     const std::string& world_id, WorldAndMutex& world_ptr,
-    const intrinsic_proto::world::WorldView& world_view)
-    ABSL_EXCLUSIVE_LOCKS_REQUIRED(world_ptr.mtx);
+    const intrinsic_proto::world::WorldView& world_view,
+    const intrinsic_proto::world::CollisionSettingsView&
+        collision_settings_view) ABSL_EXCLUSIVE_LOCKS_REQUIRED(world_ptr.mtx);
 
 }  // namespace
 
@@ -1778,7 +1779,8 @@ grpc::Status ObjectWorldService::GetWorld(
   absl::WriterMutexLock lock(*world_ptr->mtx);
   INTR_ASSIGN_OR_RETURN_GRPC(
       *response,
-      BuildWorldProto(request->world_id(), *world_ptr, request->view()));
+      BuildWorldProto(request->world_id(), *world_ptr, request->view(),
+                      request->collision_settings_view()));
   return grpc::Status::OK;
 }
 
@@ -2700,10 +2702,32 @@ GetCollisionSettingsInternal(WorldAndMutex& world_ptr)
   return MakeCollisionSettings(*world, filled_rule_set);
 }
 
+// Returns the world's collision settings for the given view. See
+// CollisionSettingsView.
+absl::StatusOr<intrinsic_proto::world::CollisionSettings>
+GetCollisionSettingsForView(WorldAndMutex& world_ptr,
+                            const intrinsic_proto::world::CollisionSettingsView&
+                                collision_settings_view)
+    ABSL_EXCLUSIVE_LOCKS_REQUIRED(world_ptr.mtx) {
+  switch (collision_settings_view) {
+    case intrinsic_proto::world::COLLISION_SETTINGS_VIEW_UNSPECIFIED:
+      // fallthrough
+    case intrinsic_proto::world::COLLISION_SETTINGS_VIEW_RULE_SET:
+      return MakeCollisionSettings(world_ptr->GetDefaultRuleSet());
+    case intrinsic_proto::world::COLLISION_SETTINGS_VIEW_EFFECTIVE:
+      return GetCollisionSettingsInternal(world_ptr);
+    default:
+      return absl::InvalidArgumentError(
+          absl::StrCat("Unsupported collision settings view: ",
+                       static_cast<int>(collision_settings_view)));
+  }
+}
+
 absl::StatusOr<intrinsic_proto::world::World> BuildWorldProto(
     const std::string& world_id, WorldAndMutex& world_ptr,
-    const intrinsic_proto::world::WorldView& world_view)
-    ABSL_EXCLUSIVE_LOCKS_REQUIRED(world_ptr.mtx) {
+    const intrinsic_proto::world::WorldView& world_view,
+    const intrinsic_proto::world::CollisionSettingsView&
+        collision_settings_view) ABSL_EXCLUSIVE_LOCKS_REQUIRED(world_ptr.mtx) {
   const stats::ScopedSpan span("ObjectWorldService/BuildWorldProto");
 
   intrinsic_proto::world::World response;
@@ -2726,8 +2750,9 @@ absl::StatusOr<intrinsic_proto::world::World> BuildWorldProto(
           *response.mutable_objects(),
           AllWorldObjects(*world, world_id, {},
                           intrinsic_proto::world::ObjectView::FULL));
-      INTR_ASSIGN_OR_RETURN(*response.mutable_collision_settings(),
-                            GetCollisionSettingsInternal(world_ptr));
+      INTR_ASSIGN_OR_RETURN(
+          *response.mutable_collision_settings(),
+          GetCollisionSettingsForView(world_ptr, collision_settings_view));
       return response;
     }
     default:
@@ -2835,9 +2860,10 @@ grpc::Status ObjectWorldService::UpdateCollisionSettings(
 
   // Get access to objects and entities of given world.
   INTR_ASSIGN_OR_RETURN_GRPC(
-      *response,
-      BuildWorldProto(request->world_id(), *world_ptr,
-                      intrinsic_proto::world::WorldView::WORLD_VIEW_FULL));
+      *response, BuildWorldProto(
+                     request->world_id(), *world_ptr,
+                     intrinsic_proto::world::WorldView::WORLD_VIEW_FULL,
+                     intrinsic_proto::world::COLLISION_SETTINGS_VIEW_RULE_SET));
   return grpc::Status::OK;
 }
 
