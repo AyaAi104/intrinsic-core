@@ -37,7 +37,6 @@ _LISTS = {
         "//intrinsic_control/intrinsic/icon/skills:move_gripper_joints_manifest_cc",
         "//intrinsic_control/intrinsic/icon/skills:set_payload_manifest",
         "//intrinsic_control/intrinsic/icon/skills:update_robot_joint_positions_manifest",
-        "//intrinsic_perception/intrinsic/perception/skills/calibration:collect_calibration_data_manifest",
         "//incode/motion_planning/skills:move_robot_manifest",
         "//incode/motion_planning/skills:preplan_motion_manifest",
         # keep-sorted end

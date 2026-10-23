@@ -16,12 +16,10 @@
 #define INTRINSIC_PERCEPTION_SKILLS_CALIBRATION_COLLECT_CALIBRATION_DATA_H_
 
 #include <memory>
-#include <utility>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "google/protobuf/message.h"
-#include "intrinsic/icon/equipment/channel_factory.h"
 #include "intrinsic/motion_planning/proto/v1/geometric_constraints.pb.h"
 #include "intrinsic/perception/proto/v1/calibration_service.grpc.pb.h"
 #include "intrinsic/platform/pubsub/pubsub.h"
@@ -35,9 +33,6 @@ namespace skills {
 // robot and a single camera.
 class CollectCalibrationData : public SkillInterface {
  public:
-  // Constants for required equipment
-  static constexpr char kRobotEquipmentSlot[] = "robot";
-
   // Skill implementation
   absl::StatusOr<std::unique_ptr<google::protobuf::Message>> Execute(
       const ExecuteRequest& request, ExecuteContext& context) override;
@@ -51,17 +46,12 @@ class CollectCalibrationData : public SkillInterface {
 
   // Constructors and factories.
   static std::unique_ptr<SkillInterface> CreateSkill();
-  explicit CollectCalibrationData(
-      std::unique_ptr<icon::ChannelFactory> icon_channel_factory)
-      : icon_channel_factory_(std::move(icon_channel_factory)) {}
+  CollectCalibrationData() = default;
   ~CollectCalibrationData() override = default;
 
   struct InputParameters;
 
  private:
-  // Factory used to instantiate the connection to ICON. This is injected so
-  // that tests can use FakeChannelFactory.
-  std::unique_ptr<icon::ChannelFactory> icon_channel_factory_;
   PubSub pubsub_;
 
   absl::Status CollectDataWithCalibrationService(

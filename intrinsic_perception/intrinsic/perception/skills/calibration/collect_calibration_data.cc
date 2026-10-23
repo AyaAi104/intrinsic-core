@@ -15,14 +15,11 @@
 #include "intrinsic/perception/skills/calibration/collect_calibration_data.h"
 
 #include <memory>
-#include <optional>
-#include <string>
 #include <utility>
 
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
@@ -33,8 +30,7 @@
 #include "intrinsic/connect/cc/grpc/channel.h"
 #include "intrinsic/eigenmath/types.h"
 #include "intrinsic/icon/cc_client/client.h"
-#include "intrinsic/icon/equipment/channel_factory.h"
-#include "intrinsic/icon/equipment/equipment_utils.h"
+#include "intrinsic/icon/equipment/resolved_dependency_utils.h"
 #include "intrinsic/icon/proto/cart_space_conversion.h"
 #include "intrinsic/icon/proto/part_status.pb.h"
 #include "intrinsic/icon/skills/util/position_part_util.h"
@@ -49,11 +45,7 @@
 #include "intrinsic/perception/proto/v1/calibration_service.pb.h"
 #include "intrinsic/perception/skills/calibration/calibration_robot_motion_utils.h"
 #include "intrinsic/perception/skills/calibration/collect_calibration_data.pb.h"
-#include "intrinsic/resources/proto/resource_handle.pb.h"
-#include "intrinsic/skills/cc/equipment_pack.h"
-#include "intrinsic/skills/cc/skill_utils.h"
 #include "intrinsic/util/eigen.h"
-#include "intrinsic/util/grpc/channel_interface.h"
 #include "intrinsic/util/status/status_conversion_grpc.h"
 #include "intrinsic/util/status/status_macros.h"
 #include "intrinsic/world/objects/frame.h"
@@ -78,8 +70,7 @@ struct CollectCalibrationData::InputParameters {
 };
 
 std::unique_ptr<SkillInterface> CollectCalibrationData::CreateSkill() {
-  return std::make_unique<CollectCalibrationData>(
-      std::make_unique<icon::DefaultChannelFactory>());
+  return std::make_unique<CollectCalibrationData>();
 }
 
 namespace {
@@ -178,46 +169,24 @@ CollectCalibrationData::Execute(const ExecuteRequest& request,
   INTR_RETURN_IF_ERROR(ValidateParams(params));
   world::ObjectWorldClient& world = context.object_world();
 
-  // Extract all required equipment.
-  const EquipmentPack equipment_pack = context.equipment();
-  INTR_ASSIGN_OR_RETURN(
-      const intrinsic_proto::resources::ResourceHandle robot_handle,
-      equipment_pack.GetHandle(kRobotEquipmentSlot));
-
   // Backup initial robot joint configuration so robot can return to this
   // configuration after calibration.
   eigenmath::VectorXd robot_start_joint_configuration;
   // We need to talk to ICON directly because the world could be stale.
-  INTR_ASSIGN_OR_RETURN(const auto connection_config,
-                        skills::GetConnectionParamsFromHandle(robot_handle));
-  auto position_part =
-      equipment_pack.Unpack<intrinsic_proto::icon::Icon2PositionPart>(
-          kRobotEquipmentSlot, icon::kIcon2PositionPartKey);
-  if (!position_part.ok()) {
-    return absl::FailedPreconditionError(
-        absl::StrCat("ICON Equipment at slot ", kRobotEquipmentSlot,
-                     " does not have a position part."));
-  }
-
+  INTR_ASSIGN_OR_RETURN(icon::IconResolvedDependency icon_resolved_dependency,
+                        icon::ConnectToIconResolvedDependency(params.robot()));
   INTR_ASSIGN_OR_RETURN(
-      skills::ArmPartInformation arm_part_info,
-      skills::GetArmPartInformation(position_part.value(), world,
-                                    params.has_arm_part()
-                                        ? std::make_optional(params.arm_part())
-                                        : std::nullopt));
-
-  INTR_ASSIGN_OR_RETURN(const world::KinematicObject robot,
-                        world.GetKinematicObject(arm_part_info.object));
+      icon::PositionPartWithObject part_with_object,
+      icon_resolved_dependency.GetPositionPartAndKinematicObject(
+          world, params.arm_part()));
+  const world::KinematicObject& robot = part_with_object.kinematic_object;
   INTR_ASSIGN_OR_RETURN(const world::Frame flange,
                         robot.GetSingleIsoFlangeFrame());
 
+  icon::Client icon_client(icon_resolved_dependency.channel);
   INTR_ASSIGN_OR_RETURN(
-      auto channel,
-      icon_channel_factory_->MakeChannel(
-          connection_config, connect::kGrpcClientConnectDefaultTimeout));
-  icon::Client icon_client(channel);
-  INTR_ASSIGN_OR_RETURN(intrinsic_proto::icon::PartStatus part_status,
-                        icon_client.GetSinglePartStatus(arm_part_info.name));
+      intrinsic_proto::icon::PartStatus part_status,
+      icon_client.GetSinglePartStatus(part_with_object.part_name));
   // Update the world with robot's joint configuration so are based on the
   // current robot configuration.
 
@@ -276,8 +245,12 @@ CollectCalibrationData::Execute(const ExecuteRequest& request,
               .robot = robot,
               .disable_collision_checking = params.disable_collision_checking(),
               .motion_type = params.motion_type(),
-              .arm_part_info = std::move(arm_part_info),
-              .icon_channel = channel,
+              .arm_part_info =
+                  ArmPartInformation{
+                      .name = part_with_object.part_name,
+                      .object = robot.ObjectReference(),
+                  },
+              .icon_channel = icon_resolved_dependency.channel,
               .motion_planner = motion_planner,
           },
   };
