@@ -371,17 +371,6 @@ function gzserver_is_reachable {
   "${NC}" -w1 -W1 "$1" "$2" | grep -q gazebo
 }
 
-function inctl_recordings_list() {
-  inctl recordings list \
-      --workcell "${CLUSTER_NAME}" \
-      "$@"
-}
-
-function inctl_recordings_generate() {
-  inctl recordings generate \
-      "$@"
-}
-
 function app_start() {
   local app="$(rlocation "$1")"
   shift
