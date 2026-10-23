@@ -77,7 +77,8 @@
   ?af <- (plan-action (id ?id) (plan-id ?plan-id) (uid ?uid) (state PROJECTING)
                       (world-id-projection ?world-id-projection)
                       (skill-id ?skill-id)
-                      (behavior-call-proto-id ?behavior-call-proto))
+                      (behavior-call-proto-id ?behavior-call-proto)
+                      (span-reference-id ?span-id))
   ?sf <- (skill-status (action-id ?uid)
                        (status PROJECTED))
   (skill-info (skill-id ?skill-id))
@@ -85,6 +86,9 @@
   (printout debug "Skill projection for action "
                   (plan-action-tostring ?plan-id ?id)
                   " (skill " ?skill-id ") has succeeded" crlf)
+  (if (<> ?span-id ?*TRACING-INVALID-SPAN-ID*) then
+    (span-add-event-annotation ?span-id "projected")
+  )
   ; TODO(b/204540881): if the flag is set, override whatever footprint the skill
   ; generated and assume it requires the entire universe. This will prevent and
   ; sequentialize concurrent skills and is a temporary workaround.

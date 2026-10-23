@@ -26,7 +26,8 @@
                       (state SELECTED|PROJECTED)
                       (skill-id ?skill-id) (executable TRUE)
                       (log-id ~0)
-                      (footprint-proto ?footprint-proto))
+                      (footprint-proto ?footprint-proto)
+                      (span-reference-id ?span-id))
   (skill-info (skill-id ?skill-id))
   ; Crucial: Sequentialize footprint conflict checking, so that multiple
   ; potentially conflicting skills cannot result in no-conflict as they are not
@@ -47,6 +48,9 @@
     (bind ?running-footprint-ids
       (append$ ?running-footprint-ids ?pa:footprint-proto))
   )
+  (if (<> ?span-id ?*TRACING-INVALID-SPAN-ID*) then
+    (span-add-event-annotation ?span-id "footprint_checking")
+  )
   (world-footprint-conflict ?world-id ?footprint-proto ?uid
     ?running-action-uids ?running-footprint-ids)
   (modify ?af (state FOOTPRINT-CHECKING))
@@ -56,10 +60,14 @@
   "Footprint conflict detection did not find any conflicts so
   action is ready for execution."
   ?af <- (plan-action (plan-id ?plan-id) (id ?id) (uid ?uid)
-                      (state FOOTPRINT-CHECKING) (skill-id ?skill-id))
+                      (state FOOTPRINT-CHECKING) (skill-id ?skill-id)
+                      (span-reference-id ?span-id))
   (skill-info (skill-id ?skill-id))
   ?wu <- (world-update (action-uid ?uid) (status NO-CONFLICT))
  =>
+  (if (<> ?span-id ?*TRACING-INVALID-SPAN-ID*) then
+    (span-add-event-annotation ?span-id "ready")
+  )
   (modify ?af (state READY))
   (retract ?wu)
 )

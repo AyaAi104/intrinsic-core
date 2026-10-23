@@ -81,6 +81,9 @@
       (append$ ?pa:projection-running-actions ?action-id)))
   )
 
+  (if (<> ?parent-span-id ?*TRACING-INVALID-SPAN-ID*) then
+    (span-add-event-annotation ?parent-span-id "pending")
+  )
   (skill-start ?uid ?world-id ?behavior-call-proto ?log-context-proto
                ?parent-span-id ?parameter-descriptor-pool-id ?sim-mode)
   (pb-remove ?log-context-proto)
