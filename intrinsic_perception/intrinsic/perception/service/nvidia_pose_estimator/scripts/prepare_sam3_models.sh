@@ -53,7 +53,7 @@ SAM3_EXPECTED_SHA256="9999e2341ceef5e136daa386eecb55cb414446a00ac2b55eb2dfd2f7c3
 # LINT.IfChange(sam3_commit)
 SAM3_GIT_COMMIT="608457d816009fc369a02c692f27efdd7256b442"
 # LINT.ThenChange(//intrinsic_perception/intrinsic/perception/service/nvidia_pose_estimator/BUILD:sam3_version)
-PIPELINE_GIT_COMMIT="816eaee5f9402c26e1527d0a063e59e1f6888523"
+PIPELINE_GIT_COMMIT="cd4965a1095fc1fd66da6e2a10b0488ebbf586eb"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

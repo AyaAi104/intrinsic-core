@@ -70,9 +70,9 @@ def _non_module_deps_impl(
     http_archive(
         name = "foundationpose_perception_pipeline",
         build_file = Label("//intrinsic/production/external:foundationpose_perception_pipeline.BUILD.bazel"),
-        sha256 = "bfac90173ecd7578117043b6883398cc7ce24610924b35231ee7bb025c8d201a",
-        strip_prefix = "foundationpose_perception_pipeline-4d79cf040a981d9375f1e8c8b0d71306b968ed67",
-        urls = ["https://github.com/intrinsic-opensource/foundationpose_perception_pipeline/archive/4d79cf040a981d9375f1e8c8b0d71306b968ed67.tar.gz"],
+        sha256 = "403987508aacc773e3ef81cfdb3aa8b79b00e741fe92fcff8c32c46d29c76f3e",
+        strip_prefix = "foundationpose_perception_pipeline-cd4965a1095fc1fd66da6e2a10b0488ebbf586eb",
+        urls = ["https://github.com/intrinsic-opensource/foundationpose_perception_pipeline/archive/cd4965a1095fc1fd66da6e2a10b0488ebbf586eb.tar.gz"],
     )
 
     # foundationpose_refine_onnx, foundationpose_score_onnx, and

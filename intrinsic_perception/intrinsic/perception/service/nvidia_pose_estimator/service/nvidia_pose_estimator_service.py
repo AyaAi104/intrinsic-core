@@ -444,8 +444,14 @@ class CustomFoundationPoseRegistry(fp_pose.FoundationPoseRegistry):
             max_image_height=height,
             batch_size=self.prepare_batch,
         )
+        t_create = time.perf_counter()
         self.estimators[key] = foundation_pose_nvidia.Estimator(
             options, config, prepare_batch=self.prepare_batch
+        )
+        logging.info(
+            "Created FoundationPose estimator for %s in %.3fs.",
+            key,
+            time.perf_counter() - t_create,
         )
       return self.estimators[key]
 
@@ -599,6 +605,10 @@ class NvidiaPoseEstimatorService(
             fp_detect.base_text_state_from_prompt_state
         ),
         no_refinement_policy=fp_config.NO_REFINEMENT_POLICY,
+        # Keep the last object's FoundationPose estimator between requests;
+        # switching objects or image size still releases it, so at most one is
+        # resident.
+        retain_pose_context=True,
     )
     logging.info(
         "Initialized perception pipeline (SAM 3 + FoundationPose) successfully."
@@ -901,11 +911,20 @@ class NvidiaPoseEstimatorService(
     )
     if fitted.width_scale != 1.0 or disparity.shape[:2] != rect_left.shape[:2]:
       disparity = disparity[: fitted.content_height, : fitted.content_width]
-      disparity = cv2.resize(
-          disparity,
-          (rect_left.shape[1], rect_left.shape[0]),
-          interpolation=cv2.INTER_LINEAR,
+      # Resize back by the width scale only, as upstream scene_depth() does: if
+      # fit_to_model cropped, the content covers just the top rows of
+      # rect_left, so the cropped-away rows stay NaN rather than stretched.
+      rect_h, rect_w = rect_left.shape[:2]
+      valid_h = (
+          rect_h
+          if round(rect_h * fitted.width_scale) <= fitted.content_height
+          else round(fitted.content_height / fitted.width_scale)
       )
+      resized = cv2.resize(
+          disparity, (rect_w, valid_h), interpolation=cv2.INTER_LINEAR
+      )
+      disparity = np.full((rect_h, rect_w), np.nan, dtype=np.float32)
+      disparity[:valid_h] = resized
 
     # Measure saturation in the model's unshifted disparity space.
     saturation = stereo_depth.saturated_fraction(disparity - pre_shift)
@@ -1224,6 +1243,7 @@ class NvidiaPoseEstimatorService(
       return predictions, routing_info
     finally:
       self._processor.confidence_threshold = previous_confidence_threshold
+      # A no-op with retain_pose_context=True; kept so scenes stay paired.
       try:
         self._pose_estimator.end_scene()
       except Exception:

@@ -76,7 +76,8 @@ message NvidiaPoseEstimatorServiceConfig {
 message StereoDepthConfig {
   // Expected scene depth range in meters. Used for stereo partner ranking
   // (min_depth_m) and disparity pre-shifting (both) to keep disparity within
-  // FoundationStereo's 416 px search range. Unset either to disable pre-shift.
+  // FoundationStereo's 416 px search range. Set either to 0 to disable
+  // pre-shift; a field left out of a config override keeps its default.
   optional float min_depth_m = 1;
   optional float max_depth_m = 2;
 

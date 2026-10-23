@@ -38,7 +38,7 @@ PKG=//intrinsic_perception/intrinsic/perception/service/nvidia_pose_estimator
 
 **Bazel fetches and builds everything except the SAM 3 weights.** The upstream sources, the
 FoundationPose C++ library, the TensorRT and CUDA runtimes, and the FoundationPose /
-FoundationStereo weights all come from pinned Bazel repositories. [§4](#4-how-the-build-works) has
+FoundationStereo weights all come from pinned Bazel repositories. [§5](#5-how-the-build-works) has
 the details if you need them; you do not need them to build or deploy.
 
 ### 1.1. Export the SAM 3 Weights
@@ -307,7 +307,75 @@ cannot fail a pose estimation request.
 
 ---
 
-## 3. Tests
+## 3. Configuration
+
+The service is configured by `NvidiaPoseEstimatorServiceConfig`
+([`proto/nvidia_service_config.proto`](proto/nvidia_service_config.proto)); the defaults are in
+[`configs/default_config.textproto`](configs/default_config.textproto).
+
+- **Per instance:** pass a binary-serialized `google.protobuf.Any` of the config to
+  `inctl service add --config=<file>.binpb`. It is merged over the defaults, but it must keep
+  `intrinsic_runtime` and the three `*_model` fields, which the platform resolves when the instance
+  is created.
+- **Per request:** pack a partial config into `PoseEstimationRunConfig.inference_parameters`, as in
+  [§2.5](#25-debug-artifacts-and-visualization-publishing). Only the fields marked ✓ in
+  [§3.2](#32-options) apply per request; the rest are read once at startup.
+
+### 3.1. Depth Source and GPU Memory
+
+`sensor_routing.depth_source` decides whether FoundationStereo is loaded, and with it how much GPU
+memory the service needs:
+
+| `depth_source` | Depth comes from | FoundationStereo | GPU memory |
+| :--- | :--- | :--- | :--- |
+| `DEPTH_SOURCE_HARDWARE` (default) | the `PIXEL_DEPTH` sensor (`hardware_depth_sensor`) | not loaded | **16 GB** |
+| `DEPTH_SOURCE_STEREO` | FoundationStereo over `stereo_sensors` | loaded | **24 GB** |
+| `DEPTH_SOURCE_AUTO` | the depth sensor if the request has one, otherwise stereo | loaded | **24 GB** |
+
+`DEPTH_SOURCE_UNSPECIFIED` behaves as `AUTO`.
+
+> [!IMPORTANT]
+> The default, `DEPTH_SOURCE_HARDWARE`, fits a 16 GB GPU. `STEREO` and `AUTO` need 24 GB: `AUTO`
+> loads FoundationStereo at startup even if every request carries a depth image, because it cannot
+> know that in advance.
+
+### 3.2. Options
+
+| Field | Default | Per request | Description |
+| :--- | :--- | :---: | :--- |
+| `intrinsic_runtime` | `intrinsic_runtime` | | Looks up installed assets: the model assets below, and each request's prompt and CAD model. |
+| `foundationpose_model`, `foundationstereo_model`, `sam3_model` | `ai.intrinsic.nvidia_pose_estimator.*_models` | | Model weight Data assets, downloaded at startup ([§2.2](#22-deploy)). |
+| `sensor_routing.detection_sensor` | `"1"` | | Sensor SAM 3 and FoundationPose run on; all depth is reprojected into its frame. |
+| `sensor_routing.depth_source` | `DEPTH_SOURCE_HARDWARE` | | See [§3.1](#31-depth-source-and-gpu-memory). |
+| `sensor_routing.hardware_depth_sensor` | first `PIXEL_DEPTH` sensor | | Depth sensor for `HARDWARE` and `AUTO`. |
+| `sensor_routing.stereo_sensors` | `"2"`, `"3"` | | Stereo sensors, base first. With three or more, the best horizontal partner for the base is chosen. A non-empty list replaces the default and needs at least two names. |
+| `stereo.min_depth_m`, `stereo.max_depth_m` | `0.30`, `0.80` | | Expected working range, used for partner ranking (`min_depth_m`) and disparity pre-shift (both). Set either to `0` to disable pre-shift (`max_depth_m: 0` leaves partner ranking unaffected); a field left out of a `--config` override keeps its default. |
+| `stereo.width`, `stereo.height` | `640`, `416` | | FoundationStereo input size, in multiples of 32. The pair is scaled to `width`; if it is then taller than `height`, its bottom rows are cropped and get no depth. A user-supplied `.plan` with a fixed shape overrides both. |
+| `stereo.clahe_clip_limit`, `stereo.clahe_detail_boost` | `3.0`, `1.5` | | Contrast enhancement before matching; `0` disables it. |
+| `sam3_detection.prompt` | `"object"` | ✓ | Text prompt. |
+| `sam3_detection.confidence_threshold` | `0.2` | ✓ | Minimum SAM 3 score, in [0, 1]. |
+| `sam3_detection.resolution` | `1008` | | SAM 3 input size; the exported graphs only accept 1008. |
+| `sam3_refinement.policy` | `REPLACE_MID_NMS06` | ✓ | `NONE` skips the CAD box-prompt refinement and the second FoundationPose pass. |
+| `sam3_refinement.low_miou`, `.high_miou` | `0.2`, `0.8` | ✓ | Proposals whose render-mask IoU falls in this range are replaced by the refined mask. |
+| `sam3_refinement.nms_threshold` | `0.6` | ✓ | Mask-NMS threshold after replacement. |
+| `foundation_pose.n_refine` | `5` | ✓ | Refinement iterations. |
+| `foundation_pose.n_hypotheses` | `252` | ✓ | Pose hypotheses per proposal; must be a multiple of `batch_size`. |
+| `foundation_pose.batch_size` | `42` | | TensorRT mini-batch size. |
+| `selection.policy` | `SOFT_GLOBAL_V1` | ✓ | `KEEP_ALL` keeps every proposal; `SOFT_GLOBAL_V1` reranks by a weighted score and drops those below `cutoff`. |
+| `selection.cutoff` | `3.0` | ✓ | Minimum reranked score. |
+| `selection.weight_sam_score`, `.weight_render_mask_iou`, `.weight_render_box_iou` | `2.0`, `4.0`, `1.0` | ✓ | Rerank weights. |
+| `selection.fp_score_divisor` | `100.0` | ✓ | Scales the FoundationPose score in the rerank; must be > 0. |
+| `debug.artifact_dir` | unset | ✓ | Dumps each request's intermediates ([§2.5](#25-debug-artifacts-and-visualization-publishing)). A per-request value must be under `/tmp`. |
+| `debug.publish_visualization` | `true` | ✓ | Publishes the detection and pose overlays to PubSub. |
+
+- Sensor names are the stringified `sensor_config.id` (Orbbec: `"1"` RGB, `"2"`/`"3"` IR, `"4"`
+  depth). An unset or unmatched selector falls back to choosing by pixel type.
+- The prompt and confidence threshold are taken from the request override first, then the target
+  asset's `IocPoseEstimatorParams`, then this config.
+
+---
+
+## 4. Tests
 
 ```bash
 bazel test --config=intrinsic $PKG:all $PKG:nvidia_pose_estimator_service_test
@@ -318,11 +386,11 @@ bazel test --config=intrinsic $PKG:all $PKG:nvidia_pose_estimator_service_test
 
 ---
 
-## 4. How the Build Works
+## 5. How the Build Works
 
 Reference only — nothing in this section requires action.
 
-### 4.1. Upstream Sources
+### 5.1. Upstream Sources
 
 Commit-pinned `http_archive` repos declared in `//bazel:non_module_deps.bzl`, with BUILD overlays
 in `//intrinsic/production/external`:
@@ -332,7 +400,7 @@ in `//intrinsic/production/external`:
 | `@foundation_pose_inference_library` | <https://github.com/intrinsic-opensource/foundation-pose-inference-library> |
 | `@foundationpose_perception_pipeline` | <https://github.com/intrinsic-opensource/foundationpose_perception_pipeline> |
 
-### 4.2. The FoundationPose C++ Library
+### 5.2. The FoundationPose C++ Library
 
 `libfoundation_pose_nvidia.so.0.1.0` is built by Bazel from upstream sources. From
 `foundation_pose_inference_library.BUILD.bazel`:
@@ -443,7 +511,7 @@ The Bazel build never compiles upstream's optional nvdiffrast backend (CMake opt
 Apache-2.0, and upstream keeps it in a separate `libfoundation_pose_nvdiffrast.so` so the license
 boundary falls at the shared-library edge.
 
-### 4.3. Runtime Libraries and Python Bindings
+### 5.3. Runtime Libraries and Python Bindings
 
 - TensorRT and the CUDA C++ runtime come from the base image `nvcr.io/nvidia/tensorrt:26.05-py3`,
   pinned by digest in `MODULE.bazel`.
@@ -459,7 +527,7 @@ boundary falls at the shared-library edge.
 > 10.16.1.11). Do not bump one without the other, and do not move to a base image carrying
 > TensorRT 11.x — a major version break invalidates serialized plans and changes the bindings ABI.
 
-### 4.4. Model Weights Fetched by Bazel
+### 5.4. Model Weights Fetched by Bazel
 
 sha256-pinned `http_file` targets in `//bazel:non_module_deps.bzl` (gated behind
 `--$PKG:download_weights=True`), fetched from NGC's public unauthenticated endpoints (with
@@ -481,7 +549,7 @@ external repo and classifies plans by filename prefix. An absent or incomplete s
 not an error: building `sam3_model_data_asset` logs a warning naming what is missing and skips
 building the bundle.
 
-### 4.5. Running Outside a Container
+### 5.5. Running Outside a Container
 
 A local, non-container run has no base image to inherit the runtime libraries from, so stage them
 by hand and point `FP_INFERENCE_LIB_PATH` at the result:
