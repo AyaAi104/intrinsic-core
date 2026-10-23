@@ -306,6 +306,20 @@ void SleepForWithStopCheck(const absl::Duration duration,
     absl::SleepFor(std::min(remaining, kStopCheckInterval));
   }
 }
+
+// Verifies that swept volume computation is permitted for the given request.
+absl::Status CheckSweptVolumeRequestAllowed(
+    const MotionPlanningRequest& request,
+    const bool enable_motion_planner_service_swept_volumes) {
+  if (request.compute_swept_volume() &&
+      !enable_motion_planner_service_swept_volumes) {
+    return absl::FailedPreconditionError(
+        "Swept volume computation is not enabled for this "
+        "MotionPlannerService instance. Unset `compute_swept_volume` in the "
+        "request.");
+  }
+  return absl::OkStatus();
+}
 }  // namespace
 
 void FromProto(
@@ -317,6 +331,8 @@ void FromProto(
   }
   config.enable_motion_planner_service_caching_fuzzy_check =
       proto_config.enable_motion_planner_service_caching_fuzzy_check();
+  config.enable_motion_planner_service_swept_volumes =
+      proto_config.enable_motion_planner_service_swept_volumes();
   config.max_diff_in_rad_for_starting_robot_configuration_threshold =
       proto_config.joint_tolerance_in_rad();
   if (proto_config.has_log_all_recordings()) {
@@ -481,6 +497,8 @@ MotionPlannerService::MotionPlannerService(
       workcell_name_(mps_config.workcell_name) {
   LOG(INFO) << "enable_motion_planner_service_caching_fuzzy_check: "
             << mps_config.enable_motion_planner_service_caching_fuzzy_check;
+  LOG(INFO) << "enable_motion_planner_service_swept_volumes: "
+            << mps_config.enable_motion_planner_service_swept_volumes;
   LOG(INFO) << "publishing trajectories on topic: "
             << kPlannedTrajectoryTopicName;
 
@@ -552,6 +570,8 @@ MotionPlannerService::ConvertPlanTrajectoryResultToTrajectoryPlanningResponse(
     grpc::ServerContext* context, const MotionPlanningRequest* request,
     intrinsic_proto::motion_planning::v1::TrajectoryPlanningResponse* response,
     std::optional<RunTimeMotionPlannerFlags> run_time_flags) {
+  INTR_RETURN_IF_ERROR_GRPC(CheckSweptVolumeRequestAllowed(
+      *request, mps_config_.enable_motion_planner_service_swept_volumes));
   TimingDebugLogger logger("PlanTrajectoryInternal");
   std::string cache_hit = "no";
   std::optional<std::string> optional_mps_asset_version = std::nullopt;
@@ -752,6 +772,8 @@ MotionPlannerService::ConvertPlanTrajectoryResultToTrajectoryPlanningResponse(
     ::grpc::ServerContext* context, const MotionPlanningRequest* request,
     intrinsic_proto::motion_planning::v1::PathPlanningResponse* response) {
   const stats::ScopedSpan span("MotionPlannerService/PlanPath", context);
+  INTR_RETURN_IF_ERROR_GRPC(CheckSweptVolumeRequestAllowed(
+      *request, mps_config_.enable_motion_planner_service_swept_volumes));
   TimingDebugLogger logger("MotionPlannerService::PlanPath");
   std::string cache_hit = "no";
 

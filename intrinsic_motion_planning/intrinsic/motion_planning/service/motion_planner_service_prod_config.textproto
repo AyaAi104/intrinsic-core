@@ -35,9 +35,11 @@
   pose_linear_tolerance_in_m: 0.001
   pose_angular_tolerance_in_rad: 0.001
   enable_motion_planner_service_nonvolatile_cache: true
+  enable_motion_planner_service_swept_volumes: false
   geometry_service_cache_size: 1000
 }
 # LINT.ThenChange(
 #     //intrinsic_motion_planning/intrinsic/motion_planning/service/motion_planner_service_prod_hil_testing_config.textproto:mps_asset_prod_hil_testing_feature_flags,
+#     //intrinsic_motion_planning/intrinsic/motion_planning/service/motion_planner_service_swept_volumes_config.textproto:mps_asset_swept_volumes_feature_flags,
 #     //intrinsic/features/features_files/generic_features/prod.pbtxt:mps_intrinsic_app_chart_prod_feature_flags
 # )

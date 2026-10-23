@@ -98,7 +98,8 @@ class MotionPlannerServiceBaseTest : public MotionPlannerServiceBaseTestHelper {
   // the various protected members.
   void Init(bool use_nonvolatile_cache, MotionPlannerFlags extra_flags,
             WorldHashMap<std::string, World> worlds_by_name,
-            const StructuredLoggingClient* logger_client = nullptr);
+            const StructuredLoggingClient* logger_client = nullptr,
+            bool enable_motion_planner_service_swept_volumes = true);
 
   // The number N for the first N characters that must match in the error
   // message.

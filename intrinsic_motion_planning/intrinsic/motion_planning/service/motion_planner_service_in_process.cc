@@ -86,6 +86,9 @@ MotionPlannerServiceInProcess::Create(
           /*plan_trajectory_nonvolatile_cache=*/nullptr,
           /*mps_config=*/
           MotionPlannerServiceConfig{
+              // This is a test harness with no config override, so enable
+              // swept volumes to let tests exercise `compute_swept_volume`.
+              .enable_motion_planner_service_swept_volumes = true,
               .workcell_name = std::string(kTestWorkcellName),
               .organization_id = std::string(kTestOrgId),
               .flags = flags});

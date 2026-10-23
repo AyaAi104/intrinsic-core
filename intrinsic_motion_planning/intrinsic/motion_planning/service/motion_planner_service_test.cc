@@ -146,6 +146,7 @@ TEST(MotionPlannerServiceConfigProtoTest, FromProto) {
   proto_config.mutable_flags()->set_enable_path_refinement_validation_step(
       true);
   proto_config.set_enable_motion_planner_service_caching_fuzzy_check(true);
+  proto_config.set_enable_motion_planner_service_swept_volumes(true);
   proto_config.set_joint_tolerance_in_rad(0.005);
   proto_config.set_log_all_recordings(true);
   MotionPlannerServiceConfig config;
@@ -155,10 +156,90 @@ TEST(MotionPlannerServiceConfigProtoTest, FromProto) {
   // `proto_config`.
   EXPECT_TRUE(config.flags.enable_path_refinement_validation_step);
   EXPECT_TRUE(config.enable_motion_planner_service_caching_fuzzy_check);
+  EXPECT_TRUE(config.enable_motion_planner_service_swept_volumes);
   EXPECT_DOUBLE_EQ(
       config.max_diff_in_rad_for_starting_robot_configuration_threshold, 0.005);
   EXPECT_TRUE(config.log_all_recordings);
 }
+class MotionPlannerServiceWithSweptVolumesDisabledTest
+    : public MotionPlannerServiceBaseTest,
+      public ::testing::Test {
+ public:
+  void SetUp() override {
+    ASSERT_OK_AND_ASSIGN(auto worlds, CreateDefault4RobotsCubeWorld(
+                                          /*set_infinite_jerk_limits=*/true));
+    MotionPlannerFlags motion_planner_flags;
+    ASSERT_OK(CheckJerkLimitsSupported(/*set_infinite_jerk_limits=*/true));
+
+    Init(/*use_nonvolatile_cache=*/false, /*extra_flags=*/motion_planner_flags,
+         /*worlds_by_name=*/std::move(worlds),
+         /*logger_client=*/nullptr,
+         /*enable_motion_planner_service_swept_volumes=*/false);
+  }
+
+  static intrinsic_proto::motion_planning::v1::MotionPlanningRequest
+  CreateDefaultTestMotionPlanningRequest() {
+    return ParseTextProtoOrDie(R"pb(
+      world_id: "world"
+      motion_specification {
+        motion_segments {
+          target {
+            joint_position { joints: [ -0.10, 0.48, -1.36, -0.77, 0.83, -1.0 ] }
+          }
+        }
+      }
+      robot_specification {
+        robot_reference { object_id { by_name { object_name: "agilus_04" } } }
+      }
+    )pb");
+  }
+};
+
+TEST_F(MotionPlannerServiceWithSweptVolumesDisabledTest,
+       PlanTrajectoryFailsWhenSweptVolumesDisabled) {
+  intrinsic_proto::motion_planning::v1::MotionPlanningRequest request =
+      CreateDefaultTestMotionPlanningRequest();
+  request.set_compute_swept_volume(true);
+  EXPECT_THAT(
+      PlanTrajectory(request),
+      StatusIs(absl::StatusCode::kFailedPrecondition,
+               HasSubstr("Swept volume computation is not enabled for this "
+                         "MotionPlannerService instance.")));
+}
+
+TEST_F(MotionPlannerServiceWithSweptVolumesDisabledTest,
+       PlanPathFailsWhenSweptVolumesDisabled) {
+  intrinsic_proto::motion_planning::v1::MotionPlanningRequest request =
+      CreateDefaultTestMotionPlanningRequest();
+  request.set_compute_swept_volume(true);
+  EXPECT_THAT(
+      PlanPath(request),
+      StatusIs(absl::StatusCode::kFailedPrecondition,
+               HasSubstr("Swept volume computation is not enabled for this "
+                         "MotionPlannerService instance.")));
+}
+
+TEST_F(MotionPlannerServiceWithSweptVolumesDisabledTest,
+       PlanTrajectorySucceedsWhenComputeSweptVolumeNotRequested) {
+  const intrinsic_proto::motion_planning::v1::MotionPlanningRequest request =
+      CreateDefaultTestMotionPlanningRequest();
+  ASSERT_OK_AND_ASSIGN(
+      const intrinsic_proto::motion_planning::v1::TrajectoryPlanningResponse
+          response,
+      PlanTrajectory(request));
+  EXPECT_THAT(response.swept_volumes(), ::testing::IsEmpty());
+}
+
+TEST_F(MotionPlannerServiceWithSweptVolumesDisabledTest,
+       PlanPathSucceedsWhenComputeSweptVolumeNotRequested) {
+  const intrinsic_proto::motion_planning::v1::MotionPlanningRequest request =
+      CreateDefaultTestMotionPlanningRequest();
+  ASSERT_OK_AND_ASSIGN(
+      const intrinsic_proto::motion_planning::v1::PathPlanningResponse response,
+      PlanPath(request));
+  EXPECT_THAT(response.swept_volumes(), ::testing::IsEmpty());
+}
+
 TEST_P(MotionPlannerServiceWithoutLoggerTest, ValidIk) {
   intrinsic_proto::motion_planning::v1::IkRequest request =
       ParseTextProtoOrDie(R"pb(

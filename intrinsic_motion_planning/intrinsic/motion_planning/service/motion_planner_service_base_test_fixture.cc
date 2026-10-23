@@ -171,7 +171,8 @@ absl::StatusOr<WorldHashMap<std::string, World>> CreateDefault4RobotsCubeWorld(
 void MotionPlannerServiceBaseTest::Init(
     bool use_nonvolatile_cache, MotionPlannerFlags extra_flags,
     WorldHashMap<std::string, World> worlds_by_name,
-    const StructuredLoggingClient* logger_client) {
+    const StructuredLoggingClient* logger_client,
+    const bool enable_motion_planner_service_swept_volumes) {
   geometry_service_ = std::make_unique<InMemoryGeometryService>();
   cas_service_ = std::make_unique<InMemoryCasService>();
 
@@ -238,6 +239,8 @@ void MotionPlannerServiceBaseTest::Init(
           /*mps_config=*/
           {
               .enable_motion_planner_service_caching_fuzzy_check = true,
+              .enable_motion_planner_service_swept_volumes =
+                  enable_motion_planner_service_swept_volumes,
               .workcell_name = std::string(kTestWorkcellName),
               .organization_id = std::string(kTestOrgId),
               .flags = extra_flags,
@@ -275,6 +278,8 @@ void MotionPlannerServiceBaseTest::Init(
           /*mps_config=*/
           {
               .enable_motion_planner_service_caching_fuzzy_check = true,
+              .enable_motion_planner_service_swept_volumes =
+                  enable_motion_planner_service_swept_volumes,
               .workcell_name = std::string(kTestWorkcellName),
               .organization_id = std::string(kTestOrgId),
               .flags = extra_flags,
