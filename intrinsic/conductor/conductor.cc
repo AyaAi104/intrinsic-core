@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <thread>
 
+#include "absl/functional/function_ref.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
@@ -186,7 +187,7 @@ absl::StatusOr<internal::UpdateWorldFromResourceSetResult> CreateInitWorld(
     intrinsic_proto::assets::v1alpha1::AssetInfoInternal::StubInterface&
         asset_info_internal,
     intrinsic_proto::world::ObjectWorldService::Service& world_service,
-    bool skip_invalid_world_updates) {
+    bool skip_invalid_world_updates, absl::FunctionRef<bool()> is_cancelled) {
   // Creates world with retries to account for transient errors, e.g., related
   // to downloading (or uploading) geos from CAS. Technically, we can introspect
   // the error to only retry for transient errors but it seems safer to just
@@ -203,6 +204,10 @@ absl::StatusOr<internal::UpdateWorldFromResourceSetResult> CreateInitWorld(
           "$0/$1)...",
           i + 1, max_tries);
       absl::SleepFor(kRetryInitialWorldInterval);
+      if (is_cancelled()) {
+        return absl::CancelledError(absl::Substitute(
+            "cancelled while creating world $0 from resource set", world_id));
+      }
     }
 
     INTR_ASSIGN_OR_RETURN(
@@ -393,7 +398,10 @@ grpc::Status ConductorImpl::CreateWorldsFromSolution(
   INTR_ASSIGN_OR_RETURN_GRPC(
       UpdateWorldFromResourceSetResult update_result,
       CreateInitWorld(*execution_context_, *asset_info_internal_stub_,
-                      world_service_, skip_invalid_world_updates));
+                      world_service_, skip_invalid_world_updates,
+                      /*is_cancelled=*/[context] {
+                        return context != nullptr && context->IsCancelled();
+                      }));
 
   // Pause the world updater before we clone into the belief world.
   INTR_RETURN_IF_ERROR_GRPC(PauseWorldUpdater())
@@ -1327,6 +1335,12 @@ absl::StatusOr<std::unique_ptr<ConductorImpl>> ConductorImpl::Create(
   // The geometric resource set data contains all scene objects and world
   // updates of the solution, which can exceed the default gRPC message size
   // limit.
+  grpc::ChannelArguments asset_info_internal_channel_args =
+      intrinsic::connect::UnlimitedMessageSizeGrpcChannelArgs();
+  if (!params.asset_info_internal_service_config.empty()) {
+    asset_info_internal_channel_args.SetServiceConfigJSON(
+        params.asset_info_internal_service_config);
+  }
   std::unique_ptr<
       intrinsic_proto::assets::v1alpha1::AssetInfoInternal::StubInterface>
       asset_info_internal_stub =
@@ -1334,7 +1348,7 @@ absl::StatusOr<std::unique_ptr<ConductorImpl>> ConductorImpl::Create(
               grpc::CreateCustomChannel(
                   params.asset_info_internal_service_address,
                   grpc::InsecureChannelCredentials(),
-                  intrinsic::connect::UnlimitedMessageSizeGrpcChannelArgs()));
+                  asset_info_internal_channel_args));
 
   // Create KVStore
   std::shared_ptr<intrinsic::KeyValueStore> kv_store;

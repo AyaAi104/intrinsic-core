@@ -101,6 +101,7 @@ cc_library(
         "//intrinsic_sdk/intrinsic/util/thread:stop_token",
         "//intrinsic_sdk/intrinsic/util/thread:util",
         "//intrinsic_sdk/intrinsic/world/proto:object_world_service_cc_grpc_proto",
+        "@abseil-cpp//absl/functional:function_ref",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_googleapis//google/longrunning:longrunning_cc_grpc",
         "@intrinsic_apis//intrinsic/assets/proto:asset_deployment_cc_grpc_proto",

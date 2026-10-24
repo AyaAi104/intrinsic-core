@@ -45,6 +45,29 @@ namespace intrinsic::conductor {
 
 class ExecutionContextOperation;
 
+// gRPC service config for the channel to the AssetInfoInternal service.
+//
+// Retries calls failing with UNAVAILABLE, e.g., due to connection blips or a
+// restarting backend, so that composing the init world (in particular on
+// startup) does not fail due to such transient errors.
+// maxAttempts is the maximum gRPC allows.
+//
+// Retry throttling is intentionally not configured: the conductor is the only
+// client of this channel, and throttling would disable retries after a few
+// failures on startup, i.e., exactly when the service may still be starting.
+inline constexpr char kAssetInfoInternalServiceConfig[] = R"json({
+  "methodConfig": [{
+    "name": [{"service": "intrinsic_proto.assets.v1alpha1.AssetInfoInternal"}],
+    "retryPolicy": {
+      "maxAttempts": 5,
+      "initialBackoff": "1s",
+      "maxBackoff": "10s",
+      "backoffMultiplier": 2,
+      "retryableStatusCodes": ["UNAVAILABLE"]
+    }
+  }]
+})json";
+
 // Params to initialize conductor.
 struct SrvParams {
   // Addresses to connect to platform services.
@@ -59,6 +82,11 @@ struct SrvParams {
   std::string runtimedb_service_address;
   // Required. Used to fetch the resource set data to compose worlds.
   std::string asset_info_internal_service_address;
+  // gRPC service config (JSON) for the channel to the AssetInfoInternal
+  // service. Empty disables the service config, i.e., gRPC does not retry
+  // calls.
+  std::string asset_info_internal_service_config =
+      kAssetInfoInternalServiceConfig;
 
   // Whether to enable simulation pause.
   bool enable_sim_pause;
