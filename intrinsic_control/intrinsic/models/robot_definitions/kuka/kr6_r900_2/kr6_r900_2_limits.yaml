@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 # Joint position limits (in radian).
 position:
   lower: [-2.96706, -3.31613, -2.0944, -3.22886, -2.0944, -6.10865]
