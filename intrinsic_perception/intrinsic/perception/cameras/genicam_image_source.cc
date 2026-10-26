@@ -545,11 +545,11 @@ absl::Status GenicamImageSource::ConfigureCameraDefaults(
   }
 
   // If available: Configure camera to send images as chunks with attached
-  // exposure time information.
+  // exposure time and hardware timestamp information.
   aravis_camera.buffer_helper_ =
       BufferHelper(aravis_camera.camera_.get(),
                    {genicam::kWidth, genicam::kHeight, genicam::kPixelFormat,
-                    genicam::kExposureTime});
+                    genicam::kExposureTime, genicam::kTimestamp});
 
   // Disable packet socket, as it leads to high latencies on docker/kubernetes,
   // see also:

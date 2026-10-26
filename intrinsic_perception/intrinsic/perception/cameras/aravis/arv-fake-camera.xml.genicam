@@ -651,6 +651,99 @@
 		<Endianess>BigEndian</Endianess>
 	</IntReg>
 
+	<Command Name="GevIEEE1588DataSetLatch" NameSpace="Custom">
+		<Description>Latches the current IEEE 1588 related values of the device.</Description>
+		<pValue>GevIEEE1588DataSetLatchRegister</pValue>
+		<CommandValue>1</CommandValue>
+	</Command>
+
+	<IntReg Name="GevIEEE1588DataSetLatchRegister" NameSpace="Custom">
+		<Address>0x340</Address>
+		<Length>4</Length>
+		<AccessMode>WO</AccessMode>
+		<pPort>Device</pPort>
+		<Sign>Unsigned</Sign>
+		<Endianess>BigEndian</Endianess>
+	</IntReg>
+
+	<Enumeration Name="GevIEEE1588Status" NameSpace="Standard">
+		<EnumEntry Name="Slave" NameSpace="Standard">
+			<Value>0</Value>
+		</EnumEntry>
+		<EnumEntry Name="Initializing" NameSpace="Standard">
+			<Value>1</Value>
+		</EnumEntry>
+		<EnumEntry Name="Faulty" NameSpace="Standard">
+			<Value>2</Value>
+		</EnumEntry>
+		<EnumEntry Name="Disabled" NameSpace="Standard">
+			<Value>3</Value>
+		</EnumEntry>
+		<EnumEntry Name="Listening" NameSpace="Standard">
+			<Value>4</Value>
+		</EnumEntry>
+		<EnumEntry Name="PreMaster" NameSpace="Standard">
+			<Value>5</Value>
+		</EnumEntry>
+		<EnumEntry Name="Master" NameSpace="Standard">
+			<Value>6</Value>
+		</EnumEntry>
+		<EnumEntry Name="Passive" NameSpace="Standard">
+			<Value>7</Value>
+		</EnumEntry>
+		<EnumEntry Name="Uncalibrated" NameSpace="Standard">
+			<Value>8</Value>
+		</EnumEntry>
+		<pValue>GevIEEE1588StatusRegister</pValue>
+	</Enumeration>
+
+	<IntReg Name="GevIEEE1588StatusRegister" NameSpace="Custom">
+		<Address>0x344</Address>
+		<Length>4</Length>
+		<AccessMode>RW</AccessMode>
+		<pPort>Device</pPort>
+		<Sign>Unsigned</Sign>
+		<Endianess>BigEndian</Endianess>
+	</IntReg>
+
+	<Integer Name="SyncFreeRunTimerStartTimeLow" NameSpace="Custom">
+		<pValue>SyncFreeRunTimerStartTimeLowRegister</pValue>
+	</Integer>
+
+	<IntReg Name="SyncFreeRunTimerStartTimeLowRegister" NameSpace="Custom">
+		<Address>0x348</Address>
+		<Length>4</Length>
+		<AccessMode>RW</AccessMode>
+		<pPort>Device</pPort>
+		<Sign>Unsigned</Sign>
+		<Endianess>BigEndian</Endianess>
+	</IntReg>
+
+	<Integer Name="SyncFreeRunTimerStartTimeHigh" NameSpace="Custom">
+		<pValue>SyncFreeRunTimerStartTimeHighRegister</pValue>
+	</Integer>
+
+	<IntReg Name="SyncFreeRunTimerStartTimeHighRegister" NameSpace="Custom">
+		<Address>0x34c</Address>
+		<Length>4</Length>
+		<AccessMode>RW</AccessMode>
+		<pPort>Device</pPort>
+		<Sign>Unsigned</Sign>
+		<Endianess>BigEndian</Endianess>
+	</IntReg>
+
+	<Float Name="SyncFreeRunTimerTriggerRateAbs" NameSpace="Custom">
+		<pValue>SyncFreeRunTimerTriggerRateAbsRegister</pValue>
+	</Float>
+
+	<FloatReg Name="SyncFreeRunTimerTriggerRateAbsRegister" NameSpace="Custom">
+		<Address>0x350</Address>
+		<Length>8</Length>
+		<AccessMode>RW</AccessMode>
+		<pPort>Device</pPort>
+		<Endianess>BigEndian</Endianess>
+	</FloatReg>
+
 	<Command Name="SyncFreeRunTimerUpdate" NameSpace="Custom">
 		<Description>Command setting that resets the PTP synchronization timers.</Description>
 		<pValue>SyncFreeRunTimerUpdateRegister</pValue>
@@ -696,6 +789,64 @@
 		<Endianess>BigEndian</Endianess>
 	</IntReg>
 
+	<Command Name="PtpDataSetLatch" NameSpace="Standard">
+		<Description>Latches the current values from the device's PTP clock data set.</Description>
+		<pValue>PtpDataSetLatchRegister</pValue>
+		<CommandValue>1</CommandValue>
+	</Command>
+
+	<IntReg Name="PtpDataSetLatchRegister" NameSpace="Custom">
+		<Address>0x360</Address>
+		<Length>4</Length>
+		<AccessMode>WO</AccessMode>
+		<pPort>Device</pPort>
+		<Sign>Unsigned</Sign>
+		<Endianess>BigEndian</Endianess>
+	</IntReg>
+
+	<Enumeration Name="PtpStatus" NameSpace="Standard">
+		<EnumEntry Name="Slave" NameSpace="Standard">
+			<Value>0</Value>
+		</EnumEntry>
+		<EnumEntry Name="Off" NameSpace="Standard">
+			<Value>1</Value>
+		</EnumEntry>
+		<EnumEntry Name="Initializing" NameSpace="Standard">
+			<Value>2</Value>
+		</EnumEntry>
+		<EnumEntry Name="Faulty" NameSpace="Standard">
+			<Value>3</Value>
+		</EnumEntry>
+		<EnumEntry Name="Disabled" NameSpace="Standard">
+			<Value>4</Value>
+		</EnumEntry>
+		<EnumEntry Name="Listening" NameSpace="Standard">
+			<Value>5</Value>
+		</EnumEntry>
+		<EnumEntry Name="PreMaster" NameSpace="Standard">
+			<Value>6</Value>
+		</EnumEntry>
+		<EnumEntry Name="Master" NameSpace="Standard">
+			<Value>7</Value>
+		</EnumEntry>
+		<EnumEntry Name="Passive" NameSpace="Standard">
+			<Value>8</Value>
+		</EnumEntry>
+		<EnumEntry Name="Uncalibrated" NameSpace="Standard">
+			<Value>9</Value>
+		</EnumEntry>
+		<pValue>PtpStatusRegister</pValue>
+	</Enumeration>
+
+	<IntReg Name="PtpStatusRegister" NameSpace="Custom">
+		<Address>0x364</Address>
+		<Length>4</Length>
+		<AccessMode>RW</AccessMode>
+		<pPort>Device</pPort>
+		<Sign>Unsigned</Sign>
+		<Endianess>BigEndian</Endianess>
+	</IntReg>
+
 	<Enumeration Name="BslPeriodicSignalSource" NameSpace="Custom">
 		<EnumEntry Name="Off" NameSpace="Custom">
 			<Value>0</Value>
@@ -709,6 +860,57 @@
 	<IntReg Name="BslPeriodicSignalSourceRegister" NameSpace="Custom">
 		<Address>0x214</Address>
 		<Length>4</Length>
+		<AccessMode>RW</AccessMode>
+		<pPort>Device</pPort>
+		<Sign>Unsigned</Sign>
+		<Endianess>BigEndian</Endianess>
+	</IntReg>
+
+	<Float Name="BslPeriodicSignalPeriod" NameSpace="Custom">
+		<pValue>BslPeriodicSignalPeriodRegister</pValue>
+	</Float>
+
+	<FloatReg Name="BslPeriodicSignalPeriodRegister" NameSpace="Custom">
+		<Address>0x370</Address>
+		<Length>8</Length>
+		<AccessMode>RW</AccessMode>
+		<pPort>Device</pPort>
+		<Endianess>BigEndian</Endianess>
+	</FloatReg>
+
+	<Float Name="BslPeriodicSignalDelay" NameSpace="Custom">
+		<pValue>BslPeriodicSignalDelayRegister</pValue>
+	</Float>
+
+	<FloatReg Name="BslPeriodicSignalDelayRegister" NameSpace="Custom">
+		<Address>0x378</Address>
+		<Length>8</Length>
+		<AccessMode>RW</AccessMode>
+		<pPort>Device</pPort>
+		<Endianess>BigEndian</Endianess>
+	</FloatReg>
+
+	<Command Name="GevTimestampControlLatch" NameSpace="Custom">
+		<pValue>GevTimestampControlLatchRegister</pValue>
+		<CommandValue>1</CommandValue>
+	</Command>
+
+	<IntReg Name="GevTimestampControlLatchRegister" NameSpace="Custom">
+		<Address>0x388</Address>
+		<Length>4</Length>
+		<AccessMode>WO</AccessMode>
+		<pPort>Device</pPort>
+		<Sign>Unsigned</Sign>
+		<Endianess>BigEndian</Endianess>
+	</IntReg>
+
+	<Integer Name="GevTimestampValue" NameSpace="Custom">
+		<pValue>GevTimestampValueRegister</pValue>
+	</Integer>
+
+	<IntReg Name="GevTimestampValueRegister" NameSpace="Custom">
+		<Address>0x390</Address>
+		<Length>8</Length>
 		<AccessMode>RW</AccessMode>
 		<pPort>Device</pPort>
 		<Sign>Unsigned</Sign>

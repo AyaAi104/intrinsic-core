@@ -1261,6 +1261,48 @@ std::optional<absl::Duration> BufferHelper::GetExposureTime(
   return absl::Microseconds(*chunk_exposure_time);
 }
 
+absl::Time BufferHelper::GetTimestamp(ArvBuffer* absl_nonnull buffer) const {
+  // Maximum allowed offset between the camera hardware timestamp and the host
+  // system arrival timestamp for the hardware timestamp to be considered
+  // epoch-aligned (accounts for exposure, readout, and transfer latency as well
+  // as a 37s TAI-UTC offset when the PTP grandmaster uses the TAI timescale).
+  // Note that the hardware timestamp is returned directly in the PTP
+  // grandmaster's timescale without heuristic TAI-to-UTC subtraction, so
+  // deployments requiring UTC-aligned image timestamps should configure the PTP
+  // grandmaster (e.g. ptp4l / phc2sys) to serve the UTC timescale. When PTP is
+  // disabled, unlocked, or synced to an isolated clock, the hardware timestamp
+  // returns ticks/nanoseconds since camera boot (near 0) and we fall back to
+  // the host arrival timestamp.
+  static constexpr absl::Duration kMaxHardwareTimestampOffset =
+      absl::Seconds(60);
+
+  const absl::Time system_acquisition_time =
+      absl::FromUnixNanos(arv_buffer_get_system_timestamp(buffer));
+
+  absl::Time device_acquisition_time =
+      absl::FromUnixNanos(arv_buffer_get_timestamp(buffer));
+  if (arv_buffer_has_chunks(buffer)) {
+    // Prefer the SFNC ChunkTimestamp (latched at FrameStart) over the GVSP
+    // packet header timestamp (which some cameras latch at ExposureEnd). When
+    // PTP (IEEE 1588) is active, the timestamp counter operates at 1 GHz
+    // (1 tick = 1 ns); when PTP is inactive, the counter starts at 0 at boot
+    // and is rejected by the kMaxHardwareTimestampOffset check below.
+    const absl::StatusOr<gint64> chunk_timestamp =
+        GetChunkValue<gint64>(genicam::kTimestamp, buffer);
+    if (chunk_timestamp.ok() && *chunk_timestamp > 0) {
+      device_acquisition_time = absl::FromUnixNanos(*chunk_timestamp);
+    }
+  }
+
+  const bool use_device_timestamp =
+      device_acquisition_time > absl::UnixEpoch() &&
+      system_acquisition_time > absl::UnixEpoch() &&
+      absl::AbsDuration(device_acquisition_time - system_acquisition_time) <=
+          kMaxHardwareTimestampOffset;
+  return use_device_timestamp ? device_acquisition_time
+                              : system_acquisition_time;
+}
+
 absl::StatusOr<CaptureResult> BufferHelper::ToCaptureResult(
     ArvBuffer* absl_nonnull buffer,
     const CameraParamsBySensorId& camera_params_by_sensor_id,
@@ -1278,11 +1320,8 @@ absl::StatusOr<CaptureResult> BufferHelper::ToCaptureResult(
            << "Unhealthy buffer status. Status code: 0x" << std::hex
            << buffer_status;
   }
-  // The function arv_buffer_get_timestamp does not deliver reliable data and
-  // thus we have to use the system time as provided by Aravis.
-  const int64_t system_time_ns = arv_buffer_get_system_timestamp(buffer);
-  const absl::Time system_acquisition_time =
-      absl::UnixEpoch() + absl::Nanoseconds(system_time_ns);
+
+  const absl::Time acquisition_time = GetTimestamp(buffer);
 
   const guint num_parts = arv_buffer_get_n_parts(buffer);
   const bool is_multipart = num_parts != 0;
@@ -1334,7 +1373,7 @@ absl::StatusOr<CaptureResult> BufferHelper::ToCaptureResult(
         SensorImage sensor_image,
         ToSensorImageImpl(src_buffer, component_id, optional_camera_params,
                           optional_camera_t_sensor, dimensions, pixel_format,
-                          system_acquisition_time, distance_scale));
+                          acquisition_time, distance_scale));
     sensor_images.push_back(std::move(sensor_image));
   }
 

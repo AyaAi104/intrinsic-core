@@ -216,6 +216,8 @@ inline constexpr char kChunkSelector[] = "ChunkSelector";
 
 inline constexpr char kChunkModeActive[] = "ChunkModeActive";
 
+inline constexpr char kTimestamp[] = "Timestamp";
+
 inline constexpr char kSensorPixelWidth[] = "SensorPixelWidth";
 inline constexpr char kSensorPixelHeight[] = "SensorPixelHeight";
 
@@ -256,10 +258,20 @@ inline constexpr char kGevSCDCT[] = "GevSCDCT";
 // and works for older camera models.
 inline constexpr char kGevIEEE1588[] = "GevIEEE1588";
 
+// Provides the state of the IEEE 1588 clock. This parameter is deprecated in
+// favor of PtpStatus and works for older camera models.
+inline constexpr char kGevIEEE1588Status[] = "GevIEEE1588Status";
+
 // The PtpEnable parameter is used to enable the IEEE 1588 Precision Time
 // Protocol (PTP) control the timestamp register. This parameter works for newer
 // camera models.
 inline constexpr char kPtpEnable[] = "PtpEnable";
+
+// Latches the current values from the device's PTP clock data set.
+inline constexpr char kPtpDataSetLatch[] = "PtpDataSetLatch";
+
+// Returns the latched state of the PTP clock.
+inline constexpr char kPtpStatus[] = "PtpStatus";
 
 // HDR parameters
 

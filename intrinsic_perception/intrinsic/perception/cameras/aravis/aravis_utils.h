@@ -91,6 +91,15 @@ class BufferHelper {
       double distance_scale);
 
  private:
+  // Retrieves the acquisition timestamp of the buffer, preferring the chunk
+  // hardware timestamp over the packet header hardware timestamp, and falling
+  // back to the host system timestamp when the hardware clock is not
+  // epoch-aligned (e.g., free-running ticks since boot). Note that the hardware
+  // timestamp is returned in the PTP grandmaster's timescale (e.g., TAI if the
+  // grandmaster uses TAI, or UTC if synchronized to CLOCK_REALTIME with zero
+  // UTC offset).
+  absl::Time GetTimestamp(ArvBuffer* absl_nonnull buffer) const;
+
   // Retrieves the supported chunk features. If `desired_features` is not empty,
   // only the intersection of `desired_features` and the supported features is
   // returned.

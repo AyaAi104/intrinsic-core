@@ -19,14 +19,18 @@
 
 #include "absl/base/nullability.h"
 #include "absl/status/status.h"
+#include "absl/time/time.h"
 
 namespace intrinsic {
 namespace perception {
 
+inline constexpr absl::Duration kDefaultPtpLockTimeout = absl::Seconds(1);
+
 // Configures PTP synchronization if enabled on the camera (via GevIEEE1588 or
 // PtpEnable settings), or falls back to configuring the free running trigger.
 absl::Status ConfigurePtpSyncAndStreamingTrigger(
-    ArvCamera* absl_nonnull camera);
+    ArvCamera* absl_nonnull camera,
+    absl::Duration ptp_lock_timeout = kDefaultPtpLockTimeout);
 
 }  // namespace perception
 }  // namespace intrinsic
