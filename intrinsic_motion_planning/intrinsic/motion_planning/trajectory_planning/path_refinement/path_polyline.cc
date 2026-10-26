@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <iterator>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -32,6 +33,10 @@
 #include "intrinsic/icon/utils/realtime_status_macro.h"
 #include "intrinsic/kinematics/types/check_joint_limits.h"
 #include "intrinsic/math/almost_equals.h"
+#include "intrinsic/math/linspace.h"
+#include "intrinsic/math/spline/bspline.h"
+#include "intrinsic/math/spline/bspline_parameter_integral_transform_function.h"
+#include "intrinsic/math/spline/bspline_parameter_transform_function_integrand.h"
 #include "intrinsic/math/spline/bspline_utils.h"
 #include "intrinsic/math/time_series_utils.h"
 #include "intrinsic/motion_planning/trajectory_planning/path_refinement/path_refinement_utils.h"
@@ -774,6 +779,196 @@ absl::Status FilterCollinearPoints(
   return absl::OkStatus();
 }
 
+// Subdivides two-point blending segments whose chord lengths significantly
+// exceed the discretization step of adjacent non-blending segments.
+//
+// When a path contains finely discretized non-blending segments (such as
+// Cartesian linear segments whose joint-space chords are slightly non-collinear
+// due to inverse kinematics nonlinearity) connected by a blending segment
+// `[P_0, ..., P_6]`, collinearity filtering removes the collinear points
+// `P_0, P_1, P_3, P_5, P_6` while preserving the two interior bending
+// control points `P_2` and `P_4`. For larger blending radii, the three chords
+// spanning `[W, P_2, P_4, V]` (where `W` and `V` are the closest surviving
+// non-blending waypoints before and after the blend) can be several times
+// longer than the adjacent non-blending chords. Under centripetal or
+// chord-length knot parameterization, this abrupt step-size jump causes large
+// variations in the first path derivative norm `||q'(s)||` and spikes in
+// `q''(s)` and `q'''(s)`.
+//
+// Reconstructing the clamped B-spline of degree `kMaxSplineDegree` with uniform
+// knots and seven control points `[W, W + (P_2 - W)/3, P_2, (P_2 + P_4)/2, P_4,
+// V + (P_4 - V)/3, V]` (which enforces zero second derivative at `W` and `V`)
+// and sampling it at uniform arc-length steps matching the adjacent
+// non-blending chord length equalizes `||q'(s)||` across the transition.
+// Subdividing after collinearity filtering avoids having the filter strip the
+// nearly collinear samples near the blend boundaries.
+absl::Status SubdivideBlendingSegments(
+    std::vector<PathPolylinePoint>& polyline_points,
+    const double min_corner_distance_for_addition_rad) {
+  if (polyline_points.size() < 6 ||
+      min_corner_distance_for_addition_rad <= 0.0) {
+    return absl::OkStatus();
+  }
+
+  std::vector<PathPolylinePoint> result;
+  result.reserve(polyline_points.size());
+
+  for (size_t i = 0; i < polyline_points.size(); ++i) {
+    // Identify a 2-point blending segment (`i`, `i + 1`) belonging to the same
+    // path segment left after collinear point removal, bounded by non-blending
+    // points at `i - 1` and `i + 2`.
+    const bool is_two_point_blending_segment =
+        i >= 1 && i + 2 < polyline_points.size() &&
+        !polyline_points[i - 1].is_on_blending_segment &&
+        polyline_points[i].is_on_blending_segment &&
+        polyline_points[i + 1].is_on_blending_segment &&
+        !polyline_points[i + 2].is_on_blending_segment &&
+        !polyline_points[i].path_segment_ids.empty() &&
+        !polyline_points[i + 1].path_segment_ids.empty() &&
+        polyline_points[i].path_segment_ids.front() ==
+            polyline_points[i + 1].path_segment_ids.front();
+
+    if (!is_two_point_blending_segment) {
+      result.push_back(polyline_points[i]);
+      continue;
+    }
+
+    // Require at least two non-blending points on each side to measure the
+    // incoming (`prev_step`) and outgoing (`next_step`) chord lengths.
+    if (i < 2 || i + 3 >= polyline_points.size() ||
+        polyline_points[i - 2].is_on_blending_segment ||
+        polyline_points[i + 3].is_on_blending_segment) {
+      result.push_back(polyline_points[i]);
+      continue;
+    }
+
+    // Only subdivide when the adjacent non-blending segments are finely
+    // discretized (smaller than `min_corner_distance_for_addition_rad`).
+    const double prev_step = (polyline_points[i - 1].joint_configuration -
+                              polyline_points[i - 2].joint_configuration)
+                                 .norm();
+    const double next_step = (polyline_points[i + 3].joint_configuration -
+                              polyline_points[i + 2].joint_configuration)
+                                 .norm();
+    if (prev_step <= kNumericalTolerance ||
+        prev_step >= min_corner_distance_for_addition_rad ||
+        next_step <= kNumericalTolerance ||
+        next_step >= min_corner_distance_for_addition_rad) {
+      result.push_back(polyline_points[i]);
+      continue;
+    }
+
+    const double ref_step = 0.5 * (prev_step + next_step);
+    const eigenmath::VectorNd& w = polyline_points[i - 1].joint_configuration;
+    const eigenmath::VectorNd& p2 = polyline_points[i].joint_configuration;
+    const eigenmath::VectorNd& p4 = polyline_points[i + 1].joint_configuration;
+    const eigenmath::VectorNd& v = polyline_points[i + 2].joint_configuration;
+
+    // Skip subdivision if the central turn chord `chord_p2_p4` is already at or
+    // below `ref_step`, if the blending chords are comparable to `ref_step`, or
+    // if any chord reaches `min_corner_distance_for_addition_rad`.
+    const double chord_w_p2 = (p2 - w).norm();
+    const double chord_p2_p4 = (p4 - p2).norm();
+    const double chord_p4_v = (v - p4).norm();
+    constexpr double kStepRatioThreshold = 1.5;
+    if (chord_p2_p4 <= ref_step ||
+        std::max({chord_w_p2, chord_p2_p4, chord_p4_v}) <=
+            kStepRatioThreshold * ref_step ||
+        std::max({chord_w_p2, chord_p2_p4, chord_p4_v}) >=
+            min_corner_distance_for_addition_rad) {
+      result.push_back(polyline_points[i]);
+      continue;
+    }
+
+    // Reconstruct the local clamped B-spline of degree `kMaxSplineDegree` with
+    // uniform knots over `[w, v]`. Placing the second and sixth control points
+    // at 1/3 along `[w, p2]` and `[v, p4]` enforces zero second derivative at
+    // `w` and `v`.
+    const std::vector<eigenmath::VectorNd> blend_control_points = {
+        w, w + (p2 - w) / 3.0, p2, 0.5 * (p2 + p4), p4, v + (p4 - v) / 3.0, v,
+    };
+    INTR_ASSIGN_OR_RETURN(
+        const std::vector<double> blend_knots,
+        MakeKnotVector(BSplineKnotVectorSelection::kUniformKnotVector,
+                       blend_control_points, kMaxSplineDegree));
+
+    BSplineNd blend_spline;
+    if (!blend_spline.Init(kMaxSplineDegree, blend_knots.size(), w.size()) ||
+        !blend_spline.SetKnotVector(blend_knots) ||
+        !blend_spline.SetControlPoints(blend_control_points)) {
+      return absl::InternalError(
+          "Failed to initialize B-spline for blending segment subdivision.");
+    }
+
+    // Tabulate cumulative arc length along the B-spline to re-sample it at
+    // uniform arc-length intervals matching `ref_step`.
+    constexpr int kNumArcLengthSamples = 200;
+    INTR_ASSIGN_OR_RETURN(const std::vector<double> u,
+                          Linspace(blend_knots.front(), blend_knots.back(),
+                                   kNumArcLengthSamples + 1));
+    INTR_ASSIGN_OR_RETURN(
+        auto arc_length_fcn,
+        BSplineParameterIntegralTransformFunction<SplineTraitsNd<>>::Create(
+            &blend_spline, BSplineArcLengthIntegrand<SplineTraitsNd<>>()));
+    INTR_ASSIGN_OR_RETURN(const std::vector<double> cumulative_arc_length,
+                          arc_length_fcn->Evaluate(absl::MakeConstSpan(u)));
+
+    const double total_arc_length = cumulative_arc_length.back();
+    const int num_subdivisions =
+        std::max(3, static_cast<int>(std::round(total_arc_length / ref_step)));
+
+    // Replace the two interior blending points with `num_subdivisions - 1`
+    // uniformly spaced arc-length samples, inheriting metadata from the closer
+    // original blending point (`i` or `i + 1`) with zero blending deviation and
+    // cleared motion events (since `RefinePathBSpline` extracts events from the
+    // separate `kAddBlendingEndpoints` polyline).
+    for (int j = 1; j < num_subdivisions; ++j) {
+      const double target_arc_length = total_arc_length *
+                                       static_cast<double>(j) /
+                                       static_cast<double>(num_subdivisions);
+      const auto it =
+          std::lower_bound(cumulative_arc_length.begin(),
+                           cumulative_arc_length.end(), target_arc_length);
+      const int idx = std::clamp(
+          static_cast<int>(std::distance(cumulative_arc_length.begin(), it)) -
+              1,
+          0, kNumArcLengthSamples - 1);
+      const double segment_arc_length =
+          cumulative_arc_length[idx + 1] - cumulative_arc_length[idx];
+      const double alpha =
+          (segment_arc_length > kNumericalTolerance)
+              ? (target_arc_length - cumulative_arc_length[idx]) /
+                    segment_arc_length
+              : 0.0;
+      const double u_target = (static_cast<double>(idx) + alpha) /
+                              static_cast<double>(kNumArcLengthSamples);
+
+      eigenmath::VectorNd sample_q = eigenmath::VectorNd::Zero(w.size());
+      if (!blend_spline.EvalCurve(u_target, &sample_q)) {
+        return absl::InternalError(
+            "Failed to evaluate subdivided blending segment point.");
+      }
+
+      const PathPolylinePoint& template_point =
+          (u_target <= 0.5) ? polyline_points[i] : polyline_points[i + 1];
+      PathPolylinePoint subdivided_point = template_point;
+      subdivided_point.joint_configuration = sample_q;
+      subdivided_point.blending_deviation_rad = 0.0;
+      subdivided_point.is_on_blending_segment = true;
+
+      subdivided_point.motion_events.clear();
+
+      result.push_back(std::move(subdivided_point));
+    }
+
+    // Skip `polyline_points[i + 1]` as both `i` and `i + 1` were replaced.
+    ++i;
+  }
+
+  polyline_points = std::move(result);
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 absl::StatusOr<std::unique_ptr<PathPolyline>> PathPolyline::Create(
@@ -799,6 +994,8 @@ absl::StatusOr<std::unique_ptr<PathPolyline>> PathPolyline::Create(
     case PathProcessingMode::kFilterCollinearAndAddBlendingEndpoints: {
       INTR_RETURN_IF_ERROR(FilterCollinearPoints(
           points, options.collinearity_angle_tolerance_rad));
+      INTR_RETURN_IF_ERROR(SubdivideBlendingSegments(
+          points, options.min_distance_for_blending_endpoint_addition_rad));
       INTR_ASSIGN_OR_RETURN(
           points,
           AddBlendingEndpoints(

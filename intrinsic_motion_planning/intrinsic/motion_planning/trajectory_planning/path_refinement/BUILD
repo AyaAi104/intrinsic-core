@@ -88,7 +88,11 @@ cc_library(
     hdrs = ["path_polyline.h"],
     deps = [
         ":path_refinement_utils",
+        "//intrinsic/math:linspace",
         "//intrinsic/math:time_series_utils",
+        "//intrinsic/math/spline:bspline",
+        "//intrinsic/math/spline:bspline_parameter_integral_transform_function",
+        "//intrinsic/math/spline:bspline_parameter_transform_function_integrand",
         "//intrinsic/math/spline:bspline_utils",
         "//intrinsic_control/intrinsic/icon/utils:realtime_status_macro",
         "//intrinsic_kinematics/intrinsic/kinematics/types:cartesian_limits",

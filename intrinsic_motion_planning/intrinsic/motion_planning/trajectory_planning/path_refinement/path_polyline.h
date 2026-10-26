@@ -57,9 +57,11 @@ enum class PathProcessingMode {
   // thus, blending endpoints are only inserted before and after the sequence.
   kAddBlendingEndpoints,
 
-  // Collinear points are filtered out, and then blending endpoints are added.
-  // (Recommended mode for constructing B-spline control polygons). Note that
-  // filtering out a point means that all the information related to that point
+  // Collinear points are filtered out, two-point blending segments whose chords
+  // are much longer than the adjacent finely discretized chords are subdivided
+  // at uniform arc length, and then blending endpoints are added. (Recommended
+  // mode for constructing B-spline control polygons). Note that filtering out a
+  // point means that all the information related to that point
 
   // is lost, including its motion events.
 
@@ -80,7 +82,10 @@ struct PathPolylineOptions {
 
   // The minimum distance from a corner to add blending endpoints around it.
   // Insertion of the blending endpoints is skipped for those corners whose
-  // distance from both adjacent corners is smaller than this threshold.
+  // distance from both adjacent corners is smaller than this threshold. In
+  // `kFilterCollinearAndAddBlendingEndpoints` mode, a positive value also
+  // serves as the upper step-size threshold for subdividing two-point filtered
+  // blending segments between finely discretized adjacent segments.
   double min_distance_for_blending_endpoint_addition_rad = 0.0;
 };
 
@@ -107,7 +112,7 @@ struct PathPolylinePoint {
   FixedVector<std::string, 2> path_segment_ids;
 
   // Indicates whether the segment the point belongs to is a blending segment.
-  bool is_on_blending_segment;
+  bool is_on_blending_segment = false;
 
 
   // The list of motion events associated with the point.

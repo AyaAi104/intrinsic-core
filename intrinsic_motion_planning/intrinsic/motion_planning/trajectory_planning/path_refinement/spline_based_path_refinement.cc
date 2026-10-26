@@ -55,11 +55,6 @@ namespace {
 // since we want to be able to compute path derivatives up to third order.
 constexpr int kMinSplineDegree = 3;
 
-// Quartic splines are used when possible because their third order path
-// derivatives are continuous. This leads to smoother outputs of the subsequent
-// trajectory generation step.
-constexpr int kMaxSplineDegree = 4;
-
 // The angle tolerance used to check whether three joint configurations q_a,
 // q_b, and q_c are collinear in the Euclidean sense. The tolerance is intended
 // to be applied to the angle between the line segments q_a-q_b and q_b-q_c.

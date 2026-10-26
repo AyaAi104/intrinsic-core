@@ -44,6 +44,12 @@ constexpr double kJointConfigEqualityMarginRad = 5e-5;
 // A threshold used to determine whether two Cartesian poses coincide.
 constexpr double kPoseEqualityMargin = 1e-4;
 
+// The maximum degree of the B-spline used for path refinement. Quartic splines
+// are used when possible because their third order path derivatives are
+// continuous, leading to smoother outputs of the subsequent trajectory
+// generation step.
+inline constexpr int kMaxSplineDegree = 4;
+
 // Returns an exactly uniformly discretized path variable, ranging from 0.0 to
 // `path_length`, with discretization `sampling_step`. `sampling_step` is
 // rounded to the nearest value that achieves an integer number of samples
