@@ -34,7 +34,7 @@ namespace {
 constexpr double kConstraintTighteningFactor = 0.99;
 
 // Threshold below which a coefficient is considered to be numerically zero.
-constexpr double kZeroThreshold = 1.0e-10;
+constexpr double kZeroThreshold = 1.0e-12;
 
 // Validates that all input spans have consistent dimensions relative to the
 // total number of path waypoints.
@@ -148,9 +148,13 @@ absl::StatusOr<double> SolveForwardPassStep(
   }
 
   // Feasibility check and selection of the control `bp`. If the maximum
-  // allowed step is smaller than the minimum required step, the constraints
-  // conflict and the feasible space is empty.
-  if (bp_max < bp_min - feasibility_tolerance) {
+  // allowed step is smaller than the minimum required step, check whether
+  // `bp_max` still satisfies all constraints within `feasibility_tolerance`
+  // (avoiding false infeasibility when a tiny `a1` coefficient magnifies
+  // floating-point roundoff upon division).
+  if (bp_max < bp_min - feasibility_tolerance &&
+      (A.col(0) * initial_b + A.col(1) * bp_max - b).maxCoeff() >
+          feasibility_tolerance) {
     return absl::InternalError(
         "Forward pass constraints are mutually exclusive.");
   }
