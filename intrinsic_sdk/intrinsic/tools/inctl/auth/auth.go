@@ -51,10 +51,6 @@ const (
 	fileMode       os.FileMode = 0o600
 	writeFileFlags             = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 
-	// tokenExchangeServer is the address of the token exchange server.
-	// Points to the GRPC gateway.
-	tokenExchangeServer = "flowstate.intrinsic.ai"
-
 	// NoLoginHint is the hint shown when the user does not have an API key configured.
 	NoLoginHint = "\n\tIt seems like you don't have an API key configured. Did you run 'inctl auth login'?\n\n"
 
@@ -151,6 +147,7 @@ func (p *ProjectToken) HTTPAuthorization(req *http.Request) (*http.Request, erro
 type asIDTokenCredentialsOptions struct {
 	apiKeyTokenSourceOptions    []APIKeyTokenSourceOption
 	tokenExchangeServiceAddress string
+	tokenExchangeAddressSet     bool
 }
 
 // AsIDTokenCredentialsOption is a functional option for [ProjectToken.AsIDTokenCredentials].
@@ -167,6 +164,7 @@ func WithAPIKeyTokenSourceOptions(options ...APIKeyTokenSourceOption) AsIDTokenC
 func WithTokenExchangeServiceAddress(address string) AsIDTokenCredentialsOption {
 	return func(opts *asIDTokenCredentialsOptions) {
 		opts.tokenExchangeServiceAddress = address
+		opts.tokenExchangeAddressSet = true
 	}
 }
 
@@ -175,11 +173,16 @@ func WithTokenExchangeServiceAddress(address string) AsIDTokenCredentialsOption 
 // This is useful for contacting services which don't accept Intrinsic API Tokens,
 // but we want to use this infrastructure to authorize users to them.
 func (p *ProjectToken) AsIDTokenCredentials(options ...AsIDTokenCredentialsOption) (*APIKeyTokenSource, error) {
-	opts := &asIDTokenCredentialsOptions{
-		tokenExchangeServiceAddress: tokenExchangeServer,
-	}
+	opts := &asIDTokenCredentialsOptions{}
 	for _, opt := range options {
 		opt(opts)
+	}
+	if !opts.tokenExchangeAddressSet {
+		address, err := tokenExchangeAddress()
+		if err != nil {
+			return nil, fmt.Errorf("cannot configure token exchange: %w", err)
+		}
+		opts.tokenExchangeServiceAddress = address
 	}
 
 	tsc, err := NewTokensServiceClient(http.DefaultClient, opts.tokenExchangeServiceAddress)

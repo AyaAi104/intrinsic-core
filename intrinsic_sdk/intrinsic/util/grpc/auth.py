@@ -218,6 +218,8 @@ def get_configuration(name: str) -> ProjectConfiguration:
       ENV_STORE_DIRECTORY,
       env_name + AUTH_CONFIG_EXTENSION,
   )
+  # Missing environment credentials fall back to project credentials.
+  # nosemgrep: bandit.B110
   try:
     with open(env_config_file_name, "r", encoding="utf-8") as f:
       return parse_config(f, env_name)
@@ -230,6 +232,8 @@ def get_configuration(name: str) -> ProjectConfiguration:
       STORE_DIRECTORY,
       name + AUTH_CONFIG_EXTENSION,
   )
+  # Missing credentials become CredentialsNotFoundError below.
+  # nosemgrep: bandit.B110
   try:
     with open(project_config_file_name, "r", encoding="utf-8") as f:
       return parse_config(f, name)

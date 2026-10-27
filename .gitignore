@@ -8,6 +8,8 @@
 .#*
 
 # Python
+.env
+.env.local
 .cache/
 *.pyc
 env/

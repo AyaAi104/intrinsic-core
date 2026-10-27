@@ -420,7 +420,8 @@ class BlackboardSnapshots:
       A list of BlackboardSnapshot objects.
     """
     snapshots = []
-    page_token = ""
+    # Empty pagination cursor requests the first page; this is not a credential.
+    page_token = ""  # nosemgrep: bandit.B105
     while True:
       request = blackboard_service_pb2.ListBlackboardSnapshotsRequest(
           page_size=100,

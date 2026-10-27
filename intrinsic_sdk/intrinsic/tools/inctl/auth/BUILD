@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//bazel:go_macros.bzl", "go_library")
+load("//bazel:go_macros.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -21,11 +21,13 @@ go_library(
     srcs = [
         "auth.go",
         "cloud.go",
+        "config.go",
         "perrpccreds.go",
         "shared.go",
         "token_source.go",
         "tokenshttp.go",
     ],
+    embedsrcs = ["defaults.env"],
     importpath = "intrinsic/tools/inctl/auth/auth",
     deps = [
         "//intrinsic_sdk/intrinsic/config:environments",
@@ -35,10 +37,20 @@ go_library(
         "//intrinsic_sdk/intrinsic/tools/inctl/util:vmalias",
         "@com_github_cenkalti_backoff_v4//:go_default_library",
         "@com_github_golang_glog//:go_default_library",
+        "@com_github_joho_godotenv//:go_default_library",
         "@com_github_spf13_viper//:go_default_library",
         "@io_opencensus_go//plugin/ocgrpc:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//credentials:go_default_library",
         "@org_golang_google_grpc//metadata:go_default_library",
     ],
+)
+
+go_test(
+    name = "config_test",
+    srcs = [
+        "config_integration_test.go",
+        "config_test.go",
+    ],
+    embed = [":auth"],
 )

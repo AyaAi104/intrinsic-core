@@ -258,6 +258,8 @@ def _find_def_header_colon_token(
   # Find the first "def" token
   def_idx = -1
   for i, token in enumerate(tokens):
+    # Python syntax keyword, not a password or authentication token.
+    # nosemgrep: bandit.B105
     if token.type == tokenize.NAME and token.string == "def":
       def_idx = i
       break

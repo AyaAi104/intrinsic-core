@@ -84,6 +84,7 @@ require (
 	github.com/hashicorp/terraform-json v0.28.0
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/jhump/protoreflect/v2 v2.0.0-beta.2
+	github.com/joho/godotenv v1.5.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/compress v1.20.0
 	github.com/kylelemons/godebug v1.1.0
@@ -385,7 +386,6 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/jszwec/csvutil v1.9.0 // indirect
