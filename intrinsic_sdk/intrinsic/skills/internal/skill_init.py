@@ -175,6 +175,8 @@ def skill_init(
   logging.info("--------------------------------")
 
   # Keep server running until an interrupt signal is received.
+  # Keyboard interruption exits the wait; finally stops the server.
+  # nosemgrep: bandit.B110
   try:
     while True:
       # Sleep for a day.

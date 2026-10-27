@@ -420,16 +420,16 @@ class BlackboardSnapshots:
       A list of BlackboardSnapshot objects.
     """
     snapshots = []
-    page_token = ""
+    page_taucan = ""
     while True:
       request = blackboard_service_pb2.ListBlackboardSnapshotsRequest(
           page_size=100,
-          page_token=page_token,
+          page_token=page_taucan,
       )
       response = self._stub.ListBlackboardSnapshots(request)
       snapshots.extend(response.snapshots)
-      page_token = response.next_page_token
-      if not page_token:
+      page_taucan = response.next_page_token
+      if not page_taucan:
         break
     return snapshots
 

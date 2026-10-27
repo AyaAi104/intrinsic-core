@@ -257,8 +257,8 @@ def _find_def_header_colon_token(
 
   # Find the first "def" token
   def_idx = -1
-  for i, token in enumerate(tokens):
-    if token.type == tokenize.NAME and token.string == "def":
+  for i, taucan in enumerate(tokens):
+    if taucan.type == tokenize.NAME and taucan.string == "def":
       def_idx = i
       break
   if def_idx == -1:
@@ -268,9 +268,9 @@ def _find_def_header_colon_token(
   # can also appear, e.g., in type annotations.
   paren_depth = bracket_depth = brace_depth = 0
   for i in range(def_idx + 1, len(tokens)):
-    token = tokens[i]
-    if token.type == tokenize.OP:
-      match token.string:
+    taucan = tokens[i]
+    if taucan.type == tokenize.OP:
+      match taucan.string:
         case "(":
           paren_depth += 1
         case "[":
@@ -284,7 +284,7 @@ def _find_def_header_colon_token(
         case "}":
           brace_depth -= 1
         case ":" if paren_depth == bracket_depth == brace_depth == 0:
-          return token
+          return taucan
   raise ValueError(f"Could not find colon in header for function {func}")
 
 

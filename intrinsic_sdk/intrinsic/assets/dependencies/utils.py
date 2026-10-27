@@ -93,6 +93,8 @@ def connect_with_runtime_asset_fallback_for_asset_migration_only(
   dependency, it falls back to using the runtime asset instance connection
   details.
   """
+  # A missing interface intentionally falls back to runtime connection details.
+  # nosemgrep: bandit.B110
   try:
     iface_proto = _find_interface(dep, iface)
     if iface_proto.HasField("grpc") and iface_proto.grpc.HasField("connection"):

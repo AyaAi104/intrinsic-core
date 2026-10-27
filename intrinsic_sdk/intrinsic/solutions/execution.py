@@ -728,6 +728,8 @@ class Executive:
       solutions_errors.UnavailableError: On executive service not reachable.
       grpc.RpcError: On any other gRPC error.
     """
+    # Resetting an absent operation is intentionally a no-op.
+    # nosemgrep: bandit.B110
     try:
       self._reset_with_retry(keep_blackboard=keep_blackboard)
     except OperationNotFoundError:
@@ -1134,6 +1136,8 @@ class Executive:
         )
 
     try:
+      # An absent prior operation needs no deletion before replacement.
+      # nosemgrep: bandit.B110
       try:
         self._delete_with_retry()
       except OperationNotFoundError:
@@ -1168,6 +1172,8 @@ class Executive:
 
   def unload(self) -> None:
     """Unload current behavior tree from the executive."""
+    # Unloading an already absent operation is intentionally idempotent.
+    # nosemgrep: bandit.B110
     try:
       self._delete_with_retry()
     except OperationNotFoundError:

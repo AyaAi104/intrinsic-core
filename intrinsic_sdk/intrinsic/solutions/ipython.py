@@ -58,6 +58,8 @@ def _display_html(html: str, newline_after_html: bool = False) -> None:
       newline_after_html: Whether to print a newline after the html for spatial
         separation from followup content.
   """
+  # IPython HTML display is optional; ImportError preserves the no-display path.
+  # nosemgrep: bandit.B110
   try:
     # pytype: disable=import-error
     # pylint: disable=g-import-not-at-top
@@ -199,6 +201,8 @@ def display_if_ipython(python_object: Any) -> None:
       python_object: Python object to display if running in IPython.
   """
   if running_in_ipython():
+    # IPython display is optional; absence leaves the caller running normally.
+    # nosemgrep: bandit.B110
     try:
       # pytype: disable=import-error
       # pylint: disable=g-import-not-at-top
@@ -240,6 +244,8 @@ def display_image_if_ipython(data: bytes, width: int) -> None:
     width: Width in pixels to which to constrain the image in html
   """
 
+  # IPython image display is optional; ignore a missing IPython dependency.
+  # nosemgrep: bandit.B110
   try:
     # pytype: disable=import-error
     # pylint: disable=g-import-not-at-top

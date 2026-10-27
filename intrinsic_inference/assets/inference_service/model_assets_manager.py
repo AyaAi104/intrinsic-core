@@ -82,6 +82,8 @@ def _write_in_chunks_from_cas(
   except grpc.RpcError as e:
     # Clean up possible partially written file.
     if tmp_file_path:
+      # Best-effort cleanup preserves the original download failure.
+      # nosemgrep: bandit.B110
       try:
         os.remove(tmp_file_path)
       except OSError:

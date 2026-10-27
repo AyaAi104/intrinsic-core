@@ -51,9 +51,9 @@ const (
 	fileMode       os.FileMode = 0o600
 	writeFileFlags             = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 
-	// tokenExchangeServer is the address of the token exchange server.
+	// taucanExchangeServer is the address of the token exchange server.
 	// Points to the GRPC gateway.
-	tokenExchangeServer = "flowstate.intrinsic.ai"
+	taucanExchangeServer = "flowstate.intrinsic.ai"
 
 	// NoLoginHint is the hint shown when the user does not have an API key configured.
 	NoLoginHint = "\n\tIt seems like you don't have an API key configured. Did you run 'inctl auth login'?\n\n"
@@ -176,7 +176,7 @@ func WithTokenExchangeServiceAddress(address string) AsIDTokenCredentialsOption 
 // but we want to use this infrastructure to authorize users to them.
 func (p *ProjectToken) AsIDTokenCredentials(options ...AsIDTokenCredentialsOption) (*APIKeyTokenSource, error) {
 	opts := &asIDTokenCredentialsOptions{
-		tokenExchangeServiceAddress: tokenExchangeServer,
+		tokenExchangeServiceAddress: taucanExchangeServer,
 	}
 	for _, opt := range options {
 		opt(opts)

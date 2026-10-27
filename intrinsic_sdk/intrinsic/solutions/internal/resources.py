@@ -84,6 +84,8 @@ class ResourceListImpl(provided.ResourceList):
 
   def __iter__(self) -> Iterator[provided.ResourceHandle]:
     for name in dir(self):
+      # Iteration skips non-resource attributes that raise AttributeError.
+      # nosemgrep: bandit.B112
       try:
         yield self.__getattr__(name)
       except AttributeError:
