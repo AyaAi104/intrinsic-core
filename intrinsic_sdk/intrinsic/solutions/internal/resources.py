@@ -14,6 +14,7 @@
 
 """Provides access to resources."""
 
+import logging
 import re
 from typing import Iterator
 from typing import Union
@@ -85,11 +86,10 @@ class ResourceListImpl(provided.ResourceList):
   def __iter__(self) -> Iterator[provided.ResourceHandle]:
     for name in dir(self):
       # Iteration skips non-resource attributes that raise AttributeError.
-      # nosemgrep: bandit.B112
       try:
         yield self.__getattr__(name)
       except AttributeError:
-        continue
+        logging.debug('Resource attribute unavailable during iteration.')
 
   def __str__(self) -> str:
     return f"ResourceList[{', '.join(self._handles.keys())}]"

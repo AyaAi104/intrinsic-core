@@ -219,13 +219,12 @@ def get_configuration(name: str) -> ProjectConfiguration:
       env_name + AUTH_CONFIG_EXTENSION,
   )
   # Missing environment credentials fall back to project credentials.
-  # nosemgrep: bandit.B110
   try:
     with open(env_config_file_name, "r", encoding="utf-8") as f:
       return parse_config(f, env_name)
   # TODO: (b/530456416) remove fallback to project
   except FileNotFoundError:
-    pass
+    logging.debug('Credential configuration file was not found.')
 
   project_config_file_name = os.path.join(
       userconfig.get_user_config_dir(),
@@ -233,12 +232,11 @@ def get_configuration(name: str) -> ProjectConfiguration:
       name + AUTH_CONFIG_EXTENSION,
   )
   # Missing credentials become CredentialsNotFoundError below.
-  # nosemgrep: bandit.B110
   try:
     with open(project_config_file_name, "r", encoding="utf-8") as f:
       return parse_config(f, name)
   except FileNotFoundError:
-    pass
+    logging.debug('Credential configuration file was not found.')
 
   raise CredentialsNotFoundError(
       message="Configuration not found.", project_name=name

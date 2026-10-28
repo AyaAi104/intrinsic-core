@@ -24,6 +24,7 @@ when running in an IPython enabled runtime such as our Jupyter container.
 """
 
 import builtins
+import logging
 import textwrap
 from typing import Any
 
@@ -59,7 +60,6 @@ def _display_html(html: str, newline_after_html: bool = False) -> None:
         separation from followup content.
   """
   # IPython HTML display is optional; ImportError preserves the no-display path.
-  # nosemgrep: bandit.B110
   try:
     # pytype: disable=import-error
     # pylint: disable=g-import-not-at-top
@@ -71,7 +71,7 @@ def _display_html(html: str, newline_after_html: bool = False) -> None:
     if newline_after_html:
       print('\n')  # To separate spacially from followup content.
   except ImportError:
-    pass
+    logging.debug('Optional IPython display is unavailable.')
 
 
 def display_html_if_ipython(
@@ -202,7 +202,6 @@ def display_if_ipython(python_object: Any) -> None:
   """
   if running_in_ipython():
     # IPython display is optional; absence leaves the caller running normally.
-    # nosemgrep: bandit.B110
     try:
       # pytype: disable=import-error
       # pylint: disable=g-import-not-at-top
@@ -212,7 +211,7 @@ def display_if_ipython(python_object: Any) -> None:
       # pylint: enable=g-import-not-at-top
       display.display(python_object)
     except ImportError:
-      pass
+      logging.debug('Optional IPython display is unavailable.')
   else:
     print('Display only executed in IPython.')
 
@@ -245,7 +244,6 @@ def display_image_if_ipython(data: bytes, width: int) -> None:
   """
 
   # IPython image display is optional; ignore a missing IPython dependency.
-  # nosemgrep: bandit.B110
   try:
     # pytype: disable=import-error
     # pylint: disable=g-import-not-at-top
@@ -255,4 +253,4 @@ def display_image_if_ipython(data: bytes, width: int) -> None:
     # pylint: enable=g-import-not-at-top
     display.display(display.Image(data=data, width=width))
   except ImportError:
-    pass
+    logging.debug('Optional IPython display is unavailable.')

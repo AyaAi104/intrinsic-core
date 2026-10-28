@@ -17,8 +17,8 @@ from intrinsic.solutions import deployments
 solution = deployments.connect()
 
 # End-to-end test expectation, not an authorization check.
-# nosemgrep: bandit.B101
-assert "ai.intrinsic.adder" in solution.skills.get_skill_ids()
+if not ('ai.intrinsic.adder' in solution.skills.get_skill_ids()):
+  raise AssertionError()
 
 executive = solution.executive
 resources = solution.resources
@@ -31,11 +31,11 @@ py_adder = skills.adder(calculator=resources.my_py_calculator, x=1, y=6)
 executive.run([cc_adder, go_adder, py_adder])
 
 # End-to-end test expectation, not an authorization check.
-# nosemgrep: bandit.B101
-assert executive.get_value(cc_adder.result).sum == 8
+if not (executive.get_value(cc_adder.result).sum == 8):
+  raise AssertionError()
 # End-to-end test expectation, not an authorization check.
-# nosemgrep: bandit.B101
-assert executive.get_value(go_adder.result).sum == 6
+if not (executive.get_value(go_adder.result).sum == 6):
+  raise AssertionError()
 # End-to-end test expectation, not an authorization check.
-# nosemgrep: bandit.B101
-assert executive.get_value(py_adder.result).sum == 7
+if not (executive.get_value(py_adder.result).sum == 7):
+  raise AssertionError()

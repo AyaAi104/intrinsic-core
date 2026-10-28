@@ -32,6 +32,7 @@ my_executive.reset()
 
 import datetime
 import enum
+import logging
 import sys
 import time
 from typing import Any
@@ -731,11 +732,10 @@ class Executive:
       grpc.RpcError: On any other gRPC error.
     """
     # Resetting an absent operation is intentionally a no-op.
-    # nosemgrep: bandit.B110
     try:
       self._reset_with_retry(keep_blackboard=keep_blackboard)
     except OperationNotFoundError:
-      pass
+      logging.debug('No executive operation exists for the requested cleanup.')
 
   def run_async(
       self,
@@ -1136,11 +1136,12 @@ class Executive:
 
     try:
       # An absent prior operation needs no deletion before replacement.
-      # nosemgrep: bandit.B110
       try:
         self._delete_with_retry()
       except OperationNotFoundError:
-        pass
+        logging.debug(
+            'No executive operation exists for the requested cleanup.'
+        )
 
       self._create_with_retry(request)
 
@@ -1172,11 +1173,10 @@ class Executive:
   def unload(self) -> None:
     """Unload current behavior tree from the executive."""
     # Unloading an already absent operation is intentionally idempotent.
-    # nosemgrep: bandit.B110
     try:
       self._delete_with_retry()
     except OperationNotFoundError:
-      pass
+      logging.debug('No executive operation exists for the requested cleanup.')
 
   def start(
       self,

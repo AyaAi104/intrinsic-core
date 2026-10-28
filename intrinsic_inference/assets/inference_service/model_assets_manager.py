@@ -83,11 +83,10 @@ def _write_in_chunks_from_cas(
     # Clean up possible partially written file.
     if tmp_file_path:
       # Best-effort cleanup preserves the original download failure.
-      # nosemgrep: bandit.B110
       try:
         os.remove(tmp_file_path)
       except OSError:
-        pass
+        logging.warning('Could not remove the partial model download.')
     raise ValueError(f"Failed to get model file from CAS for {src_path}") from e
 
 

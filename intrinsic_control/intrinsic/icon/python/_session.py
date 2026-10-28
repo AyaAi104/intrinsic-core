@@ -1006,13 +1006,12 @@ class _RequestIterator:
       self._queue.put(message)
 
   def end(self):
-    while not self._queue.empty():
-      # A concurrent consumer can empty the queue; retry the drain loop.
-      # nosemgrep: bandit.B112
+    while True:
+      # Read atomically until empty; do not race an empty() pre-check.
       try:
         self._queue.get(False)
       except queue.Empty:
-        continue
+        break
       self._queue.task_done()
     self._ended = True
     # Add a dud empty message to unblock getting from the queue.

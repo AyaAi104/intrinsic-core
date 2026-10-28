@@ -81,7 +81,6 @@ def connect(
   return connect_module.connect(iface_proto.grpc.connection, grpc_options)
 
 
-
 def connect_with_runtime_asset_fallback_for_asset_migration_only(
     dep: resolved_dependency_pb2.ResolvedDependency,
     iface: str,
@@ -94,13 +93,12 @@ def connect_with_runtime_asset_fallback_for_asset_migration_only(
   details.
   """
   # A missing interface intentionally falls back to runtime connection details.
-  # nosemgrep: bandit.B110
   try:
     iface_proto = _find_interface(dep, iface)
     if iface_proto.HasField("grpc") and iface_proto.grpc.HasField("connection"):
       return connect(dep, iface, grpc_options)
   except MissingInterfaceError:
-    pass
+    logging.debug('Interface unavailable; using runtime connection details.')
 
   cloned = resolved_dependency_pb2.ResolvedDependency()
   cloned.CopyFrom(dep)
@@ -112,9 +110,6 @@ def connect_with_runtime_asset_fallback_for_asset_migration_only(
   meta.key = "x-resource-instance-name"
   meta.value = platform.RUNTIME_INSTANCE_NAME
   return connect(cloned, iface, grpc_options)
-
-
-
 
 
 def get_data_payload(
