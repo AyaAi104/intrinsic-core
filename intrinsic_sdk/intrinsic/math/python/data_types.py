@@ -204,7 +204,8 @@ def vec6_to_pose3(vec6: VECTOR_TYPE) -> Pose3:
   Returns:
     A Pose3 object.
   """
-  assert len(vec6) == 6
+  if not (len(vec6) == 6):
+    raise AssertionError()
   return Pose3(
       translation=vec6[:3],
       rotation=Rotation3.from_euler_angles(rpy_radians=vec6[3:]),
@@ -286,7 +287,8 @@ def vec6_to_twist(vec6: VECTOR_TYPE) -> Twist:
   Returns:
     A Twist object.
   """
-  assert len(vec6) == 6
+  if not (len(vec6) == 6):
+    raise AssertionError()
   return Twist(linear=vec6[:3], angular=vec6[3:])
 
 
@@ -299,7 +301,8 @@ def vec6_to_wrench(vec6: VECTOR_TYPE) -> Wrench:
   Returns:
     A Wrench object.
   """
-  assert len(vec6) == 6
+  if not (len(vec6) == 6):
+    raise AssertionError()
   return Wrench(force=vec6[:3], torque=vec6[3:])
 
 
@@ -313,7 +316,8 @@ def vec6_to_stiffness(vec6: VECTOR_TYPE) -> Stiffness:
   Returns:
     A Stiffness object.
   """
-  assert len(vec6) == 6
+  if not (len(vec6) == 6):
+    raise AssertionError()
   return Stiffness(linear=vec6[:3], torsional=vec6[3:])
 
 

@@ -91,6 +91,7 @@ def get_single_message_name_from_file(
   """
   for file in desc_set.file:
     if file.name == filename:
-      assert len(file.message_type) == 1
+      if not (len(file.message_type) == 1):
+        raise AssertionError()
       return file.package + '.' + file.message_type[0].name
   return None

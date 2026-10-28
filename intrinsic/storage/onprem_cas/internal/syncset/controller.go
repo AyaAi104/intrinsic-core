@@ -47,7 +47,7 @@ type Controller struct {
 // NewController creates a new [Controller] and reads active [SyncSet]s from disk.
 // retentionDays specifies the age in days after which outdated completed SyncSets (and their LRO results) are deleted from disk during startup (0 means immediately).
 func NewController(ctx context.Context, syncsetDir string, retentionDays int, transferClient activeset.Transfer) (*Controller, error) {
-	if err := os.MkdirAll(syncsetDir, 0755); err != nil {
+	if err := os.MkdirAll(syncsetDir, 0o700); err != nil {
 		return nil, fmt.Errorf("creating syncset dir: %w", err)
 	}
 

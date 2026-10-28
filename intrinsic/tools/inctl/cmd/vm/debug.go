@@ -85,7 +85,7 @@ func getKubernetesContexts(ctx context.Context) ([]string, error) {
 }
 
 func deleteContext(ctx context.Context, context string) error {
-	cmdArgs := []string{"kubectl", "config", "delete-context", context}
+	cmdArgs := []string{"kubectl", "config", "delete-context", "--", context}
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("execute %v: %v", cmdArgs, err)

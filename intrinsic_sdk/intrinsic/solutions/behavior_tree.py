@@ -111,7 +111,8 @@ class NodeIdentifier:
 
   def __post_init__(self):
     # Check for valid identifier: tree id and node id are set and not "" or 0.
-    assert self.tree_id and self.node_id
+    if not (self.tree_id and self.node_id):
+      raise AssertionError()
 
   @property
   def proto(self) -> behavior_tree_pb2.BehaviorTree.NodeIdentifier:
@@ -4786,7 +4787,8 @@ class BehaviorTree:
     else:
       # This BehaviorTree represents a Process asset. The Skill proto already
       # exists and has an id and display name.
-      assert self._description is not None
+      if not (self._description is not None):
+        raise AssertionError()
       if skill_id:
         raise solutions_errors.InvalidArgumentError(
             'skill_id must not be given for a BehaviorTree that already has'

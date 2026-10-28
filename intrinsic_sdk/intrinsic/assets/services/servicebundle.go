@@ -140,7 +140,7 @@ func WriteFile(ctx context.Context, m *smpb.ServiceManifest, path string, option
 	if path == "" {
 		return fmt.Errorf("path must not be empty")
 	}
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to open %q for writing: %w", path, err)
 	}

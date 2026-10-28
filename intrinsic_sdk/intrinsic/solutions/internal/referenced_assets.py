@@ -15,6 +15,7 @@
 """Utilities for extracting and updating referenced assets in Process assets."""
 
 from collections.abc import Iterable
+import logging
 from typing import cast
 
 import grpc
@@ -79,8 +80,8 @@ def _get_catalog_asset_map(
       asset_id = id_utils.id_from_proto(catalog_asset.id_version.id)
       if asset_id:
         catalog_map[asset_id] = catalog_asset
-    except Exception:  # pylint: disable=broad-exception-caught
-      pass
+    except id_utils.IdValidationError as error:
+      logging.warning("Skipping invalid catalog asset identifier: %s", error)
 
   return catalog_map
 

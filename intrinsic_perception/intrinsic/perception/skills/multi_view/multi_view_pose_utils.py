@@ -17,6 +17,8 @@
 from collections.abc import Sequence
 import logging
 import os
+import tempfile
+import threading
 
 import cv2
 import grpc
@@ -54,6 +56,21 @@ def get_object_mesh(geometry: geometry_pb2.Geometry, address: str) -> bytes:
   return renderable.glb_bytes
 
 
+_MESH_TEMP_DIRECTORY = None
+_MESH_TEMP_DIRECTORY_LOCK = threading.Lock()
+
+
+def _mesh_temp_directory() -> tempfile.TemporaryDirectory:
+  """Owns private mesh files until process shutdown."""
+  global _MESH_TEMP_DIRECTORY
+  with _MESH_TEMP_DIRECTORY_LOCK:
+    if _MESH_TEMP_DIRECTORY is None:
+      _MESH_TEMP_DIRECTORY = tempfile.TemporaryDirectory(
+          prefix="intrinsic-mesh-"
+      )
+    return _MESH_TEMP_DIRECTORY
+
+
 def write_mesh_to_disk(
     target: target_pb2.Target,
     instance: object_world_resources.WorldObject,
@@ -67,9 +84,10 @@ def write_mesh_to_disk(
         for e in instance.proto.entities.values()
         if e.HasField("geometry_component")
     ]
-    assert (
-        len(link_entities) == 1
-    ), "Expected one link entity(with geometry component) to render."
+    if not (len(link_entities) == 1):
+      raise AssertionError(
+          'Expected one link entity(with geometry component) to render.'
+      )
     try:
       visual_geometries = geometry_component_utils.get_geometries_v1(
           link_entities[0].geometry_component,
@@ -80,23 +98,30 @@ def write_mesh_to_disk(
           "Expected one visual geometry for object to render."
       ) from e
 
-    assert (
-        len(visual_geometries) == 1
-    ), "Expected one visual geometry for object to render."
+    if not (len(visual_geometries) == 1):
+      raise AssertionError('Expected one visual geometry for object to render.')
     visual = next(iter(visual_geometries.values()))
     filename = target.mesh.filename
-    if not filename.startswith("/tmp/"):
-      filename = os.path.join("/tmp", os.path.basename(filename))
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    if os.path.isfile(filename):
+    directory = _mesh_temp_directory().name
+    if (
+        os.path.dirname(os.path.abspath(filename)) == directory
+        and not os.path.islink(filename)
+        and os.path.isfile(filename)
+    ):
       logging.info(
           "Mesh for target %s already exists at %s.", target.id, filename
       )
       return True
     else:
       gltf_mesh_string = get_object_mesh(visual.geometry, address)
-      with open(filename, "wb") as f:
+      # Exclusive creation avoids following attacker-precreated shared /tmp paths.
+      with tempfile.NamedTemporaryFile(
+          mode="wb", suffix=".glb", dir=directory, delete=False
+      ) as f:
         f.write(gltf_mesh_string)
+        filename = f.name
+      # The renderer must use the securely allocated path, not the input path.
+      target.mesh.filename = filename
       logging.info("Wrote mesh for target %s to %s.", target.id, filename)
       logging.debug(
           "gltf Mesh string for object %s with geometry_refs %s is %s.",

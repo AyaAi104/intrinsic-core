@@ -15,7 +15,7 @@
 """Pose estimator access within the workcell API."""
 
 import dataclasses
-import datetime
+import time
 from typing import Dict
 from typing import Iterator
 from typing import List
@@ -99,26 +99,25 @@ class PoseEstimators:
     self._installed_assets = installed_assets
     self._logs = logs  
 
-
   def show_last_result(self, width: Optional[int] = None) -> None:
     """Queries newest annotated frame and shows it.
 
     Args:
       width: Optional width of shown image in pixels.
     """
-    deadline = datetime.datetime.now() + datetime.timedelta(
-        seconds=_LAST_RESULT_TIMEOUT_SECONDS
-    )
-    while datetime.datetime.now() < deadline:
+    deadline = time.monotonic() + _LAST_RESULT_TIMEOUT_SECONDS
+    while time.monotonic() < deadline:
       try:
         result = self._logs.perception_frames_annotated.peek()
-        ipython.display_image_if_ipython(
-            data=result.blob_payload.data, width=width
-        )
-        return
+        data = result.blob_payload.data
       except AttributeError:
-        # We allow an attribute error to pass. For details see b/276282357.
-        continue
+        # Logging is asynchronous; wait without spinning or hiding display errors.
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+          time.sleep(min(0.05, remaining))
+      else:
+        ipython.display_image_if_ipython(data=data, width=width)
+        return
 
     message = (
         'No annotated frame found within'
@@ -128,8 +127,6 @@ class PoseEstimators:
     ipython.display_html_or_print_msg(
         f'<span style="{_CSS_FAILURE_STYLE}">{message}</span>', message
     )
-
-
 
   @error_handling.retry_on_grpc_unavailable
   def _get_pose_estimators(self) -> Dict[str, PoseEstimatorId]:

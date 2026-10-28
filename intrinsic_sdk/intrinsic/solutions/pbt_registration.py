@@ -106,7 +106,8 @@ class BehaviorTreeRegistry:
       tree_proto = tree.proto
     else:
       tree_proto = tree
-    assert tree_proto.description
+    if not (tree_proto.description):
+      raise AssertionError()
     skill_id = tree_proto.description.id
     warnings.warn(
         f'Sideloading behavior tree "{skill_id}" as a legacy process.'

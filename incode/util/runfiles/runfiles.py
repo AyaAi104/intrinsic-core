@@ -36,6 +36,7 @@ def RlocationCurrentRepository(
 ):
   if r is None:
     r = runfiles.Create()
-  assert r is not None
+  if not (r is not None):
+    raise AssertionError()
   frame += 1  # ignore this function in call stack
   return r.Rlocation(os.path.join(_get_runfiles_root(r, frame), path))

@@ -567,7 +567,8 @@ class EventFlag:
       if not self._condition.wait_for(payload_is_set, timeout=timeout):
         return False
 
-      assert isinstance(self._payload, self._Payload)
+      if not (isinstance(self._payload, self._Payload)):
+        raise AssertionError()
       if self._payload.error is None:
         return True
       else:

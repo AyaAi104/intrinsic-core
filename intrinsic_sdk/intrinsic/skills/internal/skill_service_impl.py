@@ -766,7 +766,8 @@ class _SkillOperations:
         old_operation_name = None
         for name, old_operation in self._operations.items():
           if old_operation.finished:
-            assert name is not None, 'Operation name was unexpectedly None.'
+            if not (name is not None):
+              raise AssertionError('Operation name was unexpectedly None.')
             old_operation_name = name
             break
 

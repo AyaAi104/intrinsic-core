@@ -24,6 +24,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"intrinsic/httpjson/any"
 	"intrinsic/httpjson/serialization"
@@ -115,13 +116,16 @@ func run(ctx context.Context, cliArgs *arguments.CLIArguments) error {
 		return err
 	}
 
-	return http.ListenAndServe(
-		fmt.Sprintf(":%d", cliArgs.HttpPort),
+	server := &http.Server{
+		Addr: fmt.Sprintf(":%d", cliArgs.HttpPort),
+		// Keep streaming responses unbounded; only limit header ingestion.
+		ReadHeaderTimeout: 10 * time.Second,
 		// Block cross-origin requests.
 		// CrossOriginProtection allows all "safe" methods like GET, HEAD, and OPTIONS
 		// So reviews of APIs added to the http-gateway must make sure these methods don't change state
-		http.NewCrossOriginProtection().Handler(mux),
-	)
+		Handler: http.NewCrossOriginProtection().Handler(mux),
+	}
+	return server.ListenAndServe()
 }
 
 func main() {

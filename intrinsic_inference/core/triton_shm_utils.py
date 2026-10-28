@@ -75,14 +75,11 @@ def _register_shm_region(
         actual_size,
         byte_size,
     )
-    try:
-      shm.destroy_shared_memory_region(handle)
-    except Exception:  # pylint: disable=broad-except
-      pass
+    shm.destroy_shared_memory_region(handle)
     try:
       mpsm_handle.unlink()
-    except Exception:  # pylint: disable=broad-except
-      pass
+    except FileNotFoundError:
+      logging.debug("Stale shared memory was already unlinked.")
     handle = shm.create_shared_memory_region(name, path, byte_size)
 
   try:

@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	log "github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
@@ -446,8 +447,9 @@ func (t *Telemetry) enableMetrics(c metricsConfig) {
 	mux := http.NewServeMux()
 	mux.Handle(c.MetricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	t.metricsServer = &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%v", c.MetricsPort),
-		Handler: mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		Addr:              fmt.Sprintf("0.0.0.0:%v", c.MetricsPort),
+		Handler:           mux,
 	}
 
 	go func() {

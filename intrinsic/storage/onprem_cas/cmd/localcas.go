@@ -54,10 +54,10 @@ func mainImpl() error {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
 	intrinsic.Init()
 
-	if err := os.MkdirAll(*flagObjectsDir, 0755); err != nil {
+	if err := os.MkdirAll(*flagObjectsDir, 0o700); err != nil {
 		return fmt.Errorf("failed to create objects directory %q: %w", *flagObjectsDir, err)
 	}
-	if err := os.MkdirAll(*flagPartialDir, 0755); err != nil {
+	if err := os.MkdirAll(*flagPartialDir, 0o700); err != nil {
 		return fmt.Errorf("failed to create partial directory %q: %w", *flagPartialDir, err)
 	}
 

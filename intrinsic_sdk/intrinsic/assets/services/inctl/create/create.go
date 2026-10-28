@@ -406,7 +406,7 @@ func expandTemplates(
 	// Create new files
 	for _, nf := range newFiles {
 		// Ensure the directory exists
-		if err := os.MkdirAll(filepath.Dir(nf.newFile), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(nf.newFile), 0o700); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", nf.newFile, err)
 		}
 

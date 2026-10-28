@@ -273,7 +273,8 @@ class Processes(providers.ProcessProvider):
 
     # `asset_metadata_proto` returns a copy which we can safely mutate.
     metadata_for_saving = bt.asset_metadata_proto
-    assert metadata_for_saving is not None
+    if not (metadata_for_saving is not None):
+      raise AssertionError()
     metadata_for_saving.id_version.ClearField('version')
     metadata_for_saving.ClearField('file_descriptor_set')
     bt_for_saving = bt.proto

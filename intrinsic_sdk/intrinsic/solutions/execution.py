@@ -631,12 +631,14 @@ class Executive:
     )
     if blocking:
       while not in_fininshed_states(state, is_operation_state):
-        assert (
+        if not (
             not is_operation_state or state in cancellation_unfinished_states
-        ), f"Unexpected state: {state}."
-        assert (
+        ):
+          raise AssertionError(f'Unexpected state: {state}.')
+        if not (
             is_operation_state or state in cancellation_unfinished_states_legacy
-        ), f"Unexpected state: {state}."
+        ):
+          raise AssertionError(f'Unexpected state: {state}.')
         time.sleep(self._polling_interval_in_seconds)
         state, is_operation_state = self.operation._operation_state_or_legacy_state()  # pylint:disable=protected-access
 
@@ -889,7 +891,6 @@ class Executive:
       The start and end timestamps which can be used to query the logs.
     """
 
-
     window = structured_logging.EventSourceWindow()
     window.start_time = datetime.datetime.now()
 
@@ -1017,9 +1018,7 @@ class Executive:
       )
       return
 
-
     self._last_execution_time_window = None
-
 
     self.load(
         plan_or_action,
@@ -1345,12 +1344,10 @@ class Executive:
         break
       if not is_operation_state and state in completed_states_legacy:
         break
-      assert (
-          not is_operation_state or state in uncompleted_states
-      ), f"Unexpected state: {state}"
-      assert (
-          is_operation_state or state in uncompleted_states_legacy
-      ), f"Unexpected state: {state}"
+      if not (not is_operation_state or state in uncompleted_states):
+        raise AssertionError(f'Unexpected state: {state}')
+      if not (is_operation_state or state in uncompleted_states_legacy):
+        raise AssertionError(f'Unexpected state: {state}')
       time.sleep(self._polling_interval_in_seconds)
 
     state, is_operation_state = self.operation._operation_state_or_legacy_state()  # pylint:disable=protected-access
@@ -1634,7 +1631,6 @@ class Executive:
         )
     )
 
-
   @property
   def last_execution_time_window(
       self,
@@ -1648,5 +1644,3 @@ class Executive:
       was run before or the last run was done with run_async.
     """
     return self._last_execution_time_window
-
-

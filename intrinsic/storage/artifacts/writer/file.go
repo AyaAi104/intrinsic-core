@@ -65,10 +65,13 @@ func newFileWriter(ctx context.Context, store ArtifactStore, req *artifactpb.Upd
 		return nil, fmt.Errorf("%w: %q", ErrInvalidReference, req.Ref)
 	}
 
-	file, err := os.Create(filename)
+	// Allocate an exclusive staging file; a reference must never select an
+	// existing file (or symlink) to truncate in the staging directory.
+	file, err := os.CreateTemp(tempDir, "upload-*")
 	if err != nil {
 		return nil, fmt.Errorf("cannot allocate target: %w", err)
 	}
+	filename = file.Name()
 
 	writer := &fileWriter{
 		store:      store,
@@ -184,11 +187,11 @@ func (f *fileWriter) Commit(size int64, expected digest.Digest) error {
 			if err != nil {
 				return fmt.Errorf("cannot validate expected hash")
 			}
+			defer open.Close()
 			f.digester = expected.Algorithm().Digester()
 			if _, err = io.Copy(f.digester.Hash(), open); err != nil {
 				return fmt.Errorf("cannot compute content digest: %w", err)
 			}
-			defer open.Close()
 		}
 		if expected != f.digester.Digest() {
 			return fmt.Errorf("digests does not match; wants %s, but got %s", expected, f.digester.Digest())

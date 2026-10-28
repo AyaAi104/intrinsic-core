@@ -148,6 +148,11 @@ func compareTypes(t types) error {
 	if b.Kind() != reflect.Struct {
 		return fmt.Errorf("assertSame: expected struct ptr, got %v", b)
 	}
+	// The copy below writes the source struct's entire memory representation.
+	// Matching field kinds alone does not bound nested structs or arrays.
+	if a.Size() != b.Size() || a.Align() != b.Align() {
+		return fmt.Errorf("assertSame: struct layout mismatch (%v and %v)", a, b)
+	}
 	if a.NumField() != b.NumField() {
 		return fmt.Errorf("assertSame: NumField mismatch (%v and %v)", a, b)
 	}
@@ -160,6 +165,8 @@ func compareTypes(t types) error {
 			return fmt.Errorf("assertSame: field %d offset mismatch (%d vs %d)", i, f.Offset, g.Offset)
 		case f.Type.Kind() != g.Type.Kind():
 			return fmt.Errorf("assertSame: field %d kind mismatch (%v vs %v)", i, f.Type.Kind(), g.Type.Kind())
+		case f.Type.Size() != g.Type.Size() || f.Type.Align() != g.Type.Align():
+			return fmt.Errorf("assertSame: field %d layout mismatch (%v vs %v)", i, f.Type, g.Type)
 		}
 	}
 	return nil

@@ -269,6 +269,9 @@ func (s *Store) getStoreLocation() (string, error) {
 }
 
 func (s *Store) getConfigurationFilename(projectName string) (string, error) {
+	if err := validateStoreName(projectName); err != nil {
+		return "", err
+	}
 	if projectName == "" {
 		return "", fmt.Errorf("project name is required")
 	}
@@ -327,7 +330,7 @@ func authDebug(format string, args ...any) {
 
 func readConfigurationFromFile(filename string) (*ProjectConfiguration, error) {
 	authDebug("AUTHSTORE_READ_ATTEMPT=%s", filename)
-	file, err := os.Open(filename)
+	file, err := openStoreFile(filename, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open configuration file: %w", err)
 	}
@@ -365,7 +368,7 @@ func writeConfigToFile(config *ProjectConfiguration, filename string) error {
 		return fmt.Errorf("cannot create target directory: %w", err)
 	}
 
-	file, err := os.OpenFile(filename, writeFileFlags, fileMode)
+	file, err := openStoreFile(filename, writeFileFlags, fileMode)
 	if err != nil {
 		return fmt.Errorf("cannot open configuration file: %w", err)
 	}
@@ -466,6 +469,9 @@ func (s *Store) orgStoreLocation() (string, error) {
 }
 
 func (s *Store) orgFilename(name string) (string, error) {
+	if err := validateStoreName(name); err != nil {
+		return "", err
+	}
 	orgDir, err := s.orgStoreLocation()
 	if err != nil {
 		return "", fmt.Errorf("get config directory: %w", err)
@@ -487,7 +493,7 @@ func (s *Store) WriteOrgInfo(o *OrgInfo) error {
 		return fmt.Errorf("create target directory: %w", err)
 	}
 
-	file, err := os.OpenFile(filename, writeFileFlags, fileMode)
+	file, err := openStoreFile(filename, writeFileFlags, fileMode)
 	if err != nil {
 		return fmt.Errorf("open configuration file: %w", err)
 	}
@@ -513,7 +519,7 @@ func (s *Store) ReadOrgInfo(orgName string) (OrgInfo, error) {
 
 	authDebug("AUTHSTORE_READ_ATTEMPT=%s", filename)
 
-	file, err := os.Open(filename)
+	file, err := openStoreFile(filename, os.O_RDONLY, 0)
 	if err != nil {
 		return OrgInfo{}, fmt.Errorf("open configuration: %w", err)
 	}
@@ -686,6 +692,9 @@ func (s *Store) GetEnvConfiguration(env string) (*ProjectConfiguration, error) {
 }
 
 func (s *Store) getEnvConfigurationFilename(env string) (string, error) {
+	if err := validateStoreName(env); err != nil {
+		return "", err
+	}
 	if env == "" {
 		return "", fmt.Errorf("environment name is required")
 	}
@@ -768,4 +777,23 @@ func (s *Store) UpsertProjectConfig(projectName, alias, apiKey string) error {
 	}
 
 	return nil
+}
+
+// validateStoreName accepts a single portable path component, never a path.
+func validateStoreName(name string) error {
+	if name == "" || name == "." || name == ".." || !filepath.IsLocal(name) || strings.ContainsAny(name, "/\\:\x00") {
+		return fmt.Errorf("invalid auth store name %q", name)
+	}
+	return nil
+}
+
+// openStoreFile prevents symlinks in the selected store directory from escaping
+// that directory. The returned file remains valid after closing the root handle.
+func openStoreFile(filename string, flags int, mode os.FileMode) (*os.File, error) {
+	root, err := os.OpenRoot(filepath.Dir(filename))
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	return root.OpenFile(filepath.Base(filename), flags, mode)
 }

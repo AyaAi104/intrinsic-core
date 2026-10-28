@@ -46,7 +46,7 @@ func newUpstreamCache(size int, cacheDir string) (*upstreamCache, error) {
 		return nil, err
 	}
 	if cacheDir != "" {
-		if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		if err := os.MkdirAll(cacheDir, 0o700); err != nil {
 			return nil, fmt.Errorf("failed to create stat cache dir %q: %w", cacheDir, err)
 		}
 	}

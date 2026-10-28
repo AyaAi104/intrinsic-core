@@ -22,6 +22,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"time"
 
 	"errors"
 	"net/http"
@@ -113,7 +114,11 @@ func startRegistryServer(ctx context.Context, addr string, port int, containerdA
 		return
 	}
 	handler := internal.NewOCIRegistryHandler(client, namespace)
-	server := &http.Server{Handler: handler}
+	server := &http.Server{
+		Handler: handler,
+		// Bound header reads without timing out large image uploads.
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	go func() {
 		<-ctx.Done()
 		server.Shutdown(context.Background())

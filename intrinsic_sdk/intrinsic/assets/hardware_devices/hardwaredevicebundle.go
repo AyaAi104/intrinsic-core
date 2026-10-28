@@ -102,7 +102,7 @@ func WriteFile(ctx context.Context, hdm *hdmpb.HardwareDeviceManifest, path stri
 	if path == "" {
 		return fmt.Errorf("path must not be empty")
 	}
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to open %q for writing: %w", path, err)
 	}
@@ -410,7 +410,7 @@ func tryExtractAssetKey(path string) (string, bool) {
 
 // writeToFile reads a file from r and writes it to the specified path.
 func writeToFile(r io.Reader, path string) error {
-	w, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	w, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to open %q for writing: %w", path, err)
 	}

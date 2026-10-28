@@ -293,7 +293,7 @@ func createOrUpdateBuildFile(bazelWorkspaceDir string, bazelPackage []string, bu
 	path := filepath.Join(bazelWorkspaceDir, strings.Join(bazelPackage, "/"), "BUILD")
 
 	// Create the file if it does not exist.
-	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0o660 /*rw-rw----*/)
+	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0o600)
 	if err != nil {
 		return fmt.Errorf("creating file %s: %w", path, err)
 	}

@@ -75,7 +75,15 @@ func postJSON(url url.URL, request any, response any, expectedCodes ...int) erro
 		return fmt.Errorf("encoding post request to json: %w", err)
 	}
 
-	httpResponse, err := http.Post(url.String(), "application/json", &requestBuffer)
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) == 0 || len(via) >= 10 || req.URL.Scheme != via[0].URL.Scheme || req.URL.Host != via[0].URL.Host {
+				return http.ErrUseLastResponse
+			}
+			return nil
+		},
+	}
+	httpResponse, err := client.Post(url.String(), "application/json", &requestBuffer)
 	if err != nil {
 		return fmt.Errorf("making http post request: %w", err)
 	}

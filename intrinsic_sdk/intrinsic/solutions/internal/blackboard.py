@@ -15,6 +15,7 @@
 """Blackboard access within the solution building library."""
 
 import enum
+import logging
 import typing
 
 from google.protobuf import any_pb2
@@ -252,7 +253,10 @@ class Blackboard:
         any_value.Unpack(msg)
         return msg
       except Exception:  # pylint: disable=broad-except
-        pass
+        logging.warning(
+            "Could not decode blackboard value; returning its encoded form.",
+            exc_info=True,
+        )
 
     return any_value
 

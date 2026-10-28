@@ -21,6 +21,7 @@ import io
 import logging
 import os
 import signal
+import tempfile
 import threading
 
 import cv2
@@ -74,7 +75,6 @@ _DEFAULT_CONFIDENCE_THRESHOLD: float = 0.6
 _DEFAULT_VISIBILITY_THRESHOLD: float = 0.6
 _DEFAULT_BATCH_SIZE: int = 240
 
-_VISUALIZATION_DIR = "/tmp/pose_estimation_debug/"
 _DETECTION_IMAGE_TOPIC: str = "ioc_pose_estimator/detections"
 _POSE_IMAGE_TOPIC: str = "ioc_pose_estimator/poses"
 
@@ -324,6 +324,9 @@ class IocPoseEstimatorService(
         config: Initial IocPoseEstimatorServiceConfig.
     """
     self._config = config
+    # Keep debug artifacts private and clean them up with this service instance.
+    self._visualization_dir = None
+    self._visualization_dir_lock = threading.Lock()
 
     installed_assets_channel = asset_utils.connect_with_runtime_asset_fallback_for_asset_migration_only(
         self._config.intrinsic_runtime,
@@ -715,15 +718,20 @@ class IocPoseEstimatorService(
 
     # save visualizations
     try:
-      os.makedirs(_VISUALIZATION_DIR, exist_ok=True)
+      with self._visualization_dir_lock:
+        if self._visualization_dir is None:
+          self._visualization_dir = tempfile.TemporaryDirectory(
+              prefix="intrinsic-pose-debug-"
+          )
+        visualization_dir = self._visualization_dir.name
       if vis_img is not None:
-        det_filepath = os.path.join(_VISUALIZATION_DIR, "detections.png")
+        det_filepath = os.path.join(visualization_dir, "detections.png")
         bgr_img = cv2.cvtColor(vis_img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(det_filepath, bgr_img)
         logging.info("Saved detection visualization to %s", det_filepath)
 
       if pose_vis_img is not None:
-        pose_filepath = os.path.join(_VISUALIZATION_DIR, "poses.png")
+        pose_filepath = os.path.join(visualization_dir, "poses.png")
         bgr_pose = cv2.cvtColor(pose_vis_img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(pose_filepath, bgr_pose)
         logging.info("Saved pose estimation visualization to %s", pose_filepath)
